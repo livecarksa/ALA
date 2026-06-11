@@ -35,6 +35,21 @@ class DeviceKeys:
         self._private = private_key or Ed25519PrivateKey.generate()
         self._public = self._private.public_key()
 
+    @classmethod
+    def from_private_hex(cls, private_hex: str) -> "DeviceKeys":
+        return cls(Ed25519PrivateKey.from_private_bytes(bytes.fromhex(private_hex)))
+
+    @property
+    def private_key_hex(self) -> str:
+        """للنموذج الأولي فقط: تخزين ملفي. في الإنتاج المفتاح لا يغادر البيئة الآمنة."""
+        from cryptography.hazmat.primitives import serialization
+
+        return self._private.private_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PrivateFormat.Raw,
+            encryption_algorithm=serialization.NoEncryption(),
+        ).hex()
+
     @property
     def public_key_hex(self) -> str:
         from cryptography.hazmat.primitives import serialization

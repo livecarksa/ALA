@@ -106,3 +106,38 @@ class OfflineWallet:
         self.next_seq = 0
         self.sent_tokens.clear()
         self.received_tokens.clear()
+
+    # ---------- حفظ واستعادة حالة المحفظة (للتطبيق المبسط) ----------
+
+    def to_dict(self) -> dict:
+        """حالة المحفظة كاملة للتخزين الملفي.
+
+        تحذير نموذج أولي: المفتاح الخاص يُخزن نصاً صريحاً — في الإنتاج
+        يبقى داخل البيئة الآمنة للجهاز ولا يُصدَّر إطلاقاً.
+        """
+        return {
+            "private_key": self.keys.private_key_hex,
+            "offline_balance": self.offline_balance,
+            "daily_cap": self.daily_cap,
+            "token_ttl": self.token_ttl,
+            "chain_head": self.chain_head,
+            "next_seq": self.next_seq,
+            "spent_by_day": dict(self._spent_by_day),
+            "sent_tokens": [t.to_dict() for t in self.sent_tokens],
+            "received_tokens": [t.to_dict() for t in self.received_tokens],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "OfflineWallet":
+        wallet = cls(
+            keys=DeviceKeys.from_private_hex(data["private_key"]),
+            offline_balance=data["offline_balance"],
+            chain_anchor=data["chain_head"],
+            daily_cap=data["daily_cap"],
+            token_ttl=data["token_ttl"],
+        )
+        wallet.next_seq = data["next_seq"]
+        wallet._spent_by_day.update(data["spent_by_day"])
+        wallet.sent_tokens = [SignedToken.from_dict(t) for t in data["sent_tokens"]]
+        wallet.received_tokens = [SignedToken.from_dict(t) for t in data["received_tokens"]]
+        return wallet

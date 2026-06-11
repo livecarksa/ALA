@@ -73,6 +73,15 @@ class SettlementReport:
     def settled_amount(self) -> int:
         return sum(t.amount for t in self.settled)
 
+    def to_dict(self) -> dict:
+        return {
+            "settled": [t.to_dict() for t in self.settled],
+            "rejected": [{"token": t.to_dict(), "reason": r} for t, r in self.rejected],
+            "fraud_alerts": list(self.fraud_alerts),
+            "new_anchors": dict(self.new_anchors),
+            "settled_amount": self.settled_amount,
+        }
+
 
 def _day(ts: int) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
@@ -231,6 +240,33 @@ class SettlementEngine:
 
         self._spent_by_day[day_key] = self._spent_by_day.get(day_key, 0) + token.amount
         return None
+
+    # ---------- حفظ واستعادة الحالة (للبوابة المعمّرة) ----------
+
+    def to_state(self) -> dict:
+        from dataclasses import asdict
+
+        return {
+            "accounts": {d: asdict(a) for d, a in self.accounts.items()},
+            "balances": dict(self.ledger.balances),
+            "postings": [asdict(p) for p in self.ledger.postings],
+            "settled_token_ids": sorted(self._settled_token_ids),
+            "spent_by_day": {f"{d}|{day}": v for (d, day), v in self._spent_by_day.items()},
+        }
+
+    @classmethod
+    def from_state(cls, state: dict) -> "SettlementEngine":
+        from .ledger import Posting
+
+        engine = cls()
+        engine.accounts = {d: DeviceAccount(**a) for d, a in state["accounts"].items()}
+        engine.ledger.balances = dict(state["balances"])
+        engine.ledger.postings = [Posting(**p) for p in state["postings"]]
+        engine._settled_token_ids = set(state["settled_token_ids"])
+        engine._spent_by_day = {
+            tuple(key.split("|", 1)): value for key, value in state["spent_by_day"].items()
+        }
+        return engine
 
     def _post_settlement(self, token: SignedToken) -> None:
         # الاستلام بلا حساب مسبق مدعوم: يُفتح حساب للمستلم عند أول تسوية له
