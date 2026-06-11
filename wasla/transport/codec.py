@@ -70,10 +70,18 @@ def decode_token(wire: bytes) -> SignedToken:
         sender_pubkey=pubkey.hex(),
         recipient_id=recipient.hex(),
         amount=amount,
-        currency=currency.decode("ascii"),
+        currency=_decode_currency(currency),
         seq=seq,
         prev_hash=prev_hash.hex(),
         issued_at=issued_at,
         expires_at=expires_at,
         signature=signature.hex(),
     )
+
+
+def _decode_currency(raw: bytes) -> str:
+    # العملة 3 بايت ثابتة؛ نزيل أي حشو أصفار فلا يتسرب اختلاف بين الموقّع والمفكوك
+    try:
+        return raw.rstrip(b"\x00").decode("ascii")
+    except UnicodeDecodeError as exc:
+        raise TokenError("رمز عملة غير صالح في الحمولة") from exc

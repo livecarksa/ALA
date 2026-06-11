@@ -110,6 +110,19 @@ class TestSmsPath:
             with pytest.raises(TokenError):
                 reassembler.feed(bad)
 
+    def test_absurd_total_rejected(self):
+        """جودة#3: total مفبرك ضخم يُرفض — لا حجز ذاكرة لمليون مقطع وهمي."""
+        reassembler = SmsReassembler()
+        with pytest.raises(TokenError):
+            reassembler.feed("WSL1|aa|1/999999|data")
+
+    def test_inflight_buffers_are_bounded(self):
+        """جودة#3: المقاطع الأولى التي لا تكتمل لا تتراكم بلا حد."""
+        reassembler = SmsReassembler(max_inflight=8)
+        for i in range(50):  # 50 رسالة ناقصة مختلفة
+            reassembler.feed(f"WSL1|msg{i:05d}|1/2|chunkdata")
+        assert len(reassembler.pending()) <= 8
+
 
 class TestQrPath:
     def test_roundtrip(self):

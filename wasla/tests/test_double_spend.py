@@ -79,7 +79,9 @@ class TestForkDetection:
         assert engine.balance(victim.device_id) == 10_000
 
     def test_fork_across_separate_batches_detected(self):
-        """الفرع الثاني يصل في دفعة لاحقة بعد تسوية الأول — السلسلة المبتورة تُرفض."""
+        """الحالة الجوهرية: المستلمان يتصلان في أوقات مختلفة فيصل فرعا التفرع
+        في دفعتين منفصلتين. يجب أن يُكشف الإنفاق المزدوج ويُجمّد المهاجم —
+        لا أن يمرّ الفرع الثاني كسلسلة مبتورة بلا عقوبة."""
         engine = SettlementEngine()
         attacker = make_user(engine, balance=50_000)
         victim_a = make_user(engine, balance=0)
@@ -88,11 +90,16 @@ class TestForkDetection:
         legit = attacker.send(victim_a.device_id, 30_000, now=NOW)
         forged = fork_token(attacker, victim_b.device_id, 30_000, legit.seq, legit.prev_hash, NOW + 5)
 
-        engine.settle_batch([legit.to_dict()], now=NOW + 100)
-        # بعد التسوية تغيّرت المرساة — الفرع القديم لم يعد يصل بها
+        report1 = engine.settle_batch([legit.to_dict()], now=NOW + 100)
+        assert len(report1.settled) == 1  # الفرع الأول سُوّي لمستلمه البريء
+        assert report1.fraud_alerts == []  # لا دليل تفرع بعد
+
+        # الفرع الثاني يصل لاحقاً عبر دفعة منفصلة — نقطة استهلاكه محفوظة
         report2 = engine.settle_batch([forged.to_dict()], now=NOW + 200)
         assert report2.settled == []
-        assert report2.rejected[0][1] == RejectReason.CHAIN_BROKEN
+        assert report2.rejected[0][1] == RejectReason.DOUBLE_SPEND
+        assert attacker.device_id in report2.fraud_alerts
+        assert engine.accounts[attacker.device_id].frozen is True
         assert engine.balance(victim_b.device_id) == 0
 
 

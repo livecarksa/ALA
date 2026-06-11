@@ -44,8 +44,19 @@ def run_demo(verbose: bool = True, db_path: str | None = None) -> dict:
     say("وصلة — عرض البوابة الثانية: تحويل أوف لاين كامل وتسويته")
     say("═" * 64)
 
+    active: list[BankakSandbox] = []  # لإغلاق أي خادم مفتوح مهما حدث
+
+    try:
+        return _run_demo_body(now, db_path, say, log, active)
+    finally:
+        for box in active:
+            box.stop()
+
+
+def _run_demo_body(now, db_path, say, log, active) -> dict:
     # ── [1] بيئة اختبار بنكك تعمل (HTTP + SQLite معمّرة)
     sandbox = BankakSandbox(db_path=db_path).start()
+    active.append(sandbox)
     bank = GatewayClient(sandbox.base_url)
     say(f"\n[1] بيئة اختبار بنكك تعمل على {sandbox.base_url}")
     say(f"    قاعدة بيانات معمّرة: {db_path}")
@@ -111,7 +122,9 @@ def run_demo(verbose: bool = True, db_path: str | None = None) -> dict:
     # ── [5] انقطاع كهرباء في البنك — الخادم يعاد تشغيله على نفس القاعدة
     say("\n[6] ⚡ انقطاع كهرباء: بيئة الاختبار تُعاد من قاعدة SQLite نفسها")
     sandbox.stop()
+    active.remove(sandbox)
     sandbox2 = BankakSandbox(db_path=db_path).start()
+    active.append(sandbox2)
     bank2 = GatewayClient(sandbox2.base_url)
 
     balances = {label: bank2.balance(w.device_id)["balance"] for label, w in wallets.items()}
@@ -123,7 +136,6 @@ def run_demo(verbose: bool = True, db_path: str | None = None) -> dict:
         f"{recon['settled_tokens']} توكناً مسوّى، "
         f"ميزان المراجعة = {recon['trial_balance']} — "
         f"{'متوازن ✓' if recon['balanced'] else 'خلل ✗'}")
-    sandbox2.stop()
     say("═" * 64)
 
     return {

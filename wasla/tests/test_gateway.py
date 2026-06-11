@@ -83,6 +83,16 @@ class TestIdempotency:
         client.cash_in(wallet.device_id, 50_000, "agent-receipt-77")  # وكيل أعاد المحاولة
         assert client.balance(wallet.device_id)["balance"] == 50_000
 
+    def test_cash_in_reference_amount_mismatch_rejected(self, sandbox):
+        """دفع#3: نفس المرجع بمبلغ مختلف تضارب يُرفع لا يُبتلع صمتاً."""
+        client = GatewayClient(sandbox.base_url)
+        wallet = OfflineWallet()
+        client.register(wallet.keys.public_key_hex, wallet.daily_cap)
+        client.cash_in(wallet.device_id, 50_000, "agent-receipt-9")
+        with pytest.raises(GatewayError):
+            client.cash_in(wallet.device_id, 60_000, "agent-receipt-9")
+        assert client.balance(wallet.device_id)["balance"] == 50_000
+
 
 class TestDurability:
     def test_state_survives_restart(self, tmp_path):

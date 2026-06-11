@@ -24,7 +24,7 @@ class Ledger:
     balances: dict[str, int] = field(default_factory=dict)
     postings: list[Posting] = field(default_factory=list)
 
-    def open_account(self, account: str, _initial: int = 0) -> None:
+    def open_account(self, account: str) -> None:
         self.balances.setdefault(account, 0)
 
     def post(self, debit: str, credit: str, amount: int, reference: str, memo: str = "") -> Posting:

@@ -40,15 +40,25 @@ class GatewayService:
         row = self._db.execute("SELECT state FROM engine_state WHERE id = 1").fetchone()
         self.engine = SettlementEngine.from_state(json.loads(row[0])) if row else SettlementEngine()
 
+    def _reload_from_db(self) -> None:
+        """يعيد المحرك في الذاكرة لآخر حالة محفوظة — يُستدعى إن فشل الحفظ."""
+        row = self._db.execute("SELECT state FROM engine_state WHERE id = 1").fetchone()
+        self.engine = SettlementEngine.from_state(json.loads(row[0])) if row else SettlementEngine()
+
     def _persist(self) -> None:
-        # حفظ ذري: الحالة كاملة في معاملة واحدة قبل أي ردّ للعميل
+        """حفظ ذري للحالة. إن فشل الحفظ نُرجع المحرك في الذاكرة للحالة المحفوظة
+        حتى لا تبقى تعديلات لم تُكتب مصدراً وحيداً للحقيقة بين الطلبات."""
         state = json.dumps(self.engine.to_state(), ensure_ascii=False)
-        with self._db:
-            self._db.execute(
-                "INSERT INTO engine_state (id, state) VALUES (1, ?) "
-                "ON CONFLICT (id) DO UPDATE SET state = excluded.state",
-                (state,),
-            )
+        try:
+            with self._db:
+                self._db.execute(
+                    "INSERT INTO engine_state (id, state) VALUES (1, ?) "
+                    "ON CONFLICT (id) DO UPDATE SET state = excluded.state",
+                    (state,),
+                )
+        except Exception:
+            self._reload_from_db()
+            raise
 
     # ---------- العمليات ----------
 
@@ -58,8 +68,9 @@ class GatewayService:
             if existing_id in self.engine.accounts:
                 account = self.engine.accounts[existing_id]  # تسجيل مكرر — نفس الحساب
             else:
-                account = self.engine.register_device(pubkey_hex, daily_cap)
-                self._persist()
+                self.engine.register_device(pubkey_hex, daily_cap)
+                self._persist()  # يُرجع الحالة إن فشل، فلا حساب شبح في الذاكرة
+                account = self.engine.accounts[existing_id]
             return {
                 "device_id": account.device_id,
                 "chain_anchor": account.chain_anchor,
@@ -70,12 +81,19 @@ class GatewayService:
         with self._lock:
             if device_id not in self.engine.accounts:
                 raise KeyError("جهاز غير مسجل")
-            # نفس المرجع لنفس الجهاز لا يتكرر — وكيل أعاد المحاولة بعد انقطاع
-            duplicate = any(
-                p.reference == reference and p.credit_account == device_id
-                for p in self.engine.ledger.postings
+            # نفس المرجع لنفس الجهاز إيداع واحد — وكيل أعاد المحاولة بعد انقطاع.
+            # لكن لو اختلف المبلغ لنفس المرجع فهو تضارب يُرفع لا يُبتلع صمتاً.
+            prior = next(
+                (p for p in self.engine.ledger.postings
+                 if p.reference == reference and p.credit_account == device_id),
+                None,
             )
-            if not duplicate:
+            if prior is not None:
+                if prior.amount != amount:
+                    raise ValueError(
+                        f"المرجع {reference} مستخدم بمبلغ {prior.amount} لا {amount}"
+                    )
+            else:
                 self.engine.cash_in(device_id, amount, reference)
                 self._persist()
             return {"device_id": device_id, "balance": self.engine.balance(device_id)}
@@ -91,20 +109,25 @@ class GatewayService:
             report = self.engine.settle_batch(tokens, now=now)
             result = report.to_dict()
             result["batch_id"] = batch_id
-            result["balances"] = {
+            result["balances_after_batch"] = {
                 t.sender_id: self.engine.balance(t.sender_id) for t in report.settled
             }
             state = json.dumps(self.engine.to_state(), ensure_ascii=False)
-            with self._db:  # الحالة ونتيجة الدفعة في معاملة واحدة — لا منطقة رمادية
-                self._db.execute(
-                    "INSERT INTO engine_state (id, state) VALUES (1, ?) "
-                    "ON CONFLICT (id) DO UPDATE SET state = excluded.state",
-                    (state,),
-                )
-                self._db.execute(
-                    "INSERT INTO settlement_batches (batch_id, result) VALUES (?, ?)",
-                    (batch_id, json.dumps(result, ensure_ascii=False)),
-                )
+            try:
+                with self._db:  # الحالة ونتيجة الدفعة في معاملة واحدة — لا منطقة رمادية
+                    self._db.execute(
+                        "INSERT INTO engine_state (id, state) VALUES (1, ?) "
+                        "ON CONFLICT (id) DO UPDATE SET state = excluded.state",
+                        (state,),
+                    )
+                    self._db.execute(
+                        "INSERT INTO settlement_batches (batch_id, result) VALUES (?, ?)",
+                        (batch_id, json.dumps(result, ensure_ascii=False)),
+                    )
+            except Exception:
+                # فشل الحفظ: نُرجع المحرك للحالة المحفوظة فلا تُسوّى دفعة بلا سجل
+                self._reload_from_db()
+                raise
             return result
 
     def balance(self, device_id: str) -> dict:

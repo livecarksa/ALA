@@ -11,16 +11,21 @@
 from __future__ import annotations
 
 import base64
+from collections import OrderedDict
 
 from token_engine.crypto import sha256_hex
 from token_engine.token import SignedToken, TokenError
 
-from .codec import decode_token, encode_token
+from .codec import TOKEN_WIRE_SIZE, decode_token, encode_token
 
 HEADER = "WSL1"
 # 153 حرفاً سعة مقطع SMS متسلسل (GSM-7)؛ الترويسة ~18 حرفاً،
 # و130 تجعل التوكن (252 حرف Base64) مقطعين بالضبط
 DEFAULT_CHUNK_SIZE = 130
+# توكن 188 بايت = ~252 حرف Base64 ≈ مقطعان؛ سقف أمان ضد total مفبرك
+MAX_SEGMENTS = (TOKEN_WIRE_SIZE * 2 // DEFAULT_CHUNK_SIZE) + 4
+# حد للرسائل الناقصة المحفوظة معاً — يمنع تضخم الذاكرة من مقاطع لا تكتمل
+MAX_INFLIGHT_MESSAGES = 64
 
 
 def to_sms_segments(token: SignedToken, chunk_size: int = DEFAULT_CHUNK_SIZE) -> list[str]:
@@ -37,9 +42,11 @@ class SmsReassembler:
     """يجمّع مقاطع رسائل واردة (بأي ترتيب، من عدة تحويلات متداخلة)
     ويعيد التوكنات المكتملة. صالح للهاتف العادي حيث تصل الرسائل متفرقة."""
 
-    def __init__(self):
-        self._partial: dict[str, dict[int, str]] = {}
+    def __init__(self, max_inflight: int = MAX_INFLIGHT_MESSAGES):
+        # OrderedDict لإخلاء أقدم رسالة ناقصة عند تجاوز السعة (LRU)
+        self._partial: OrderedDict[str, dict[int, str]] = OrderedDict()
         self._totals: dict[str, int] = {}
+        self._max_inflight = max_inflight
 
     def feed(self, segment: str) -> SignedToken | None:
         """مقطع وارد. يعيد التوكن إذا اكتمل وإلا None."""
@@ -51,12 +58,16 @@ class SmsReassembler:
             raise TokenError("مقطع SMS مشوه البنية") from exc
         if header != HEADER or not (1 <= idx <= total):
             raise TokenError("مقطع SMS بترويسة أو ترقيم غير صالح")
+        if total > MAX_SEGMENTS:
+            raise TokenError(f"عدد مقاطع مفرط ({total}) — تجاوز الحد {MAX_SEGMENTS}")
 
         known_total = self._totals.setdefault(msg_id, total)
         if known_total != total:
             raise TokenError("مقاطع متضاربة لنفس معرّف الرسالة")
         parts = self._partial.setdefault(msg_id, {})
+        self._partial.move_to_end(msg_id)  # الأحدث نشاطاً يبقى، الأقدم يُخلى أولاً
         parts[idx] = chunk  # التكرار (إعادة إرسال) يحلّ محل نفسه بلا ضرر
+        self._evict_overflow()
 
         if len(parts) < total:
             return None
@@ -71,6 +82,11 @@ class SmsReassembler:
         token = decode_token(wire)
         del self._partial[msg_id], self._totals[msg_id]
         return token
+
+    def _evict_overflow(self) -> None:
+        while len(self._partial) > self._max_inflight:
+            old_id, _ = self._partial.popitem(last=False)  # أقدم رسالة ناقصة
+            self._totals.pop(old_id, None)
 
     def pending(self) -> dict[str, str]:
         """الرسائل الناقصة: معرّف الرسالة ← حالة الاكتمال (للعرض للمستخدم)."""

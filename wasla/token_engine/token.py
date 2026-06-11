@@ -18,6 +18,19 @@ class TokenError(WaslaError):
     """حمولة توكن غير صالحة بنيوياً."""
 
 
+def _check_amount(amount) -> None:
+    # bool ينجح في isinstance(.., int) — نرفضه صراحةً منعاً للالتباس النوعي
+    if isinstance(amount, bool) or not isinstance(amount, int) or amount <= 0:
+        raise TokenError("المبلغ يجب أن يكون عدداً صحيحاً موجباً بالقرش")
+
+
+def _check_currency(currency: str) -> None:
+    # تمثيل قانوني ثابت: 3 حروف لاتينية كبيرة — حتى يصمد عبر الترميز الثنائي
+    if not (isinstance(currency, str) and len(currency) == 3 and currency.isascii()
+            and currency.isalpha() and currency.isupper()):
+        raise TokenError("رمز العملة يجب أن يكون 3 حروف لاتينية كبيرة (مثل SDG)")
+
+
 @dataclass(frozen=True)
 class SignedToken:
     token_id: str
@@ -59,8 +72,8 @@ class SignedToken:
         ttl_seconds: int,
         currency: str = "SDG",
     ) -> "SignedToken":
-        if not isinstance(amount, int) or amount <= 0:
-            raise TokenError("المبلغ يجب أن يكون عدداً صحيحاً موجباً بالقرش")
+        _check_amount(amount)
+        _check_currency(currency)
         payload = cls._payload_dict(
             token_id=uuid.uuid4().hex,
             sender_id=keys.device_id,
@@ -88,8 +101,8 @@ class SignedToken:
         """تحقق ذاتي: التوقيع، اشتقاق المعرّف من المفتاح، الصلاحية."""
         if sha256_hex(bytes.fromhex(self.sender_pubkey))[:16] != self.sender_id:
             raise InvalidSignature("معرّف المرسل لا يطابق مفتاحه العام")
-        if not isinstance(self.amount, int) or self.amount <= 0:
-            raise TokenError("مبلغ غير صالح")
+        _check_amount(self.amount)
+        _check_currency(self.currency)
         verify_signature(self.sender_pubkey, self.signature, canonical_json(self.payload()))
         if now is not None and now > self.expires_at:
             raise ExpiredToken(f"التوكن {self.token_id[:8]} انتهت صلاحيته قبل التسوية")
