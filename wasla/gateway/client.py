@@ -6,10 +6,13 @@ stdlib فقط (urllib) — لا تبعيات شبكية إضافية في الن
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.request
 
 from token_engine.errors import WaslaError
+
+from .auth import sign_request
 
 
 class GatewayError(WaslaError):
@@ -17,17 +20,29 @@ class GatewayError(WaslaError):
 
 
 class GatewayClient:
-    def __init__(self, base_url: str, timeout: float = 10.0):
+    """عميل البوابة. إن مُرّر `keys` يوقّع كل طلب بمفتاح الجهاز —
+    وهو المطلوب لكل ما عدا التسجيل (بوابة الانضمام المفتوحة)."""
+
+    def __init__(self, base_url: str, timeout: float = 10.0, keys=None):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.keys = keys
 
     def _request(self, method: str, path: str, body: dict | None = None) -> dict:
         data = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        if self.keys is not None:
+            timestamp = int(time.time())
+            headers["X-Wasla-Device"] = self.keys.device_id
+            headers["X-Wasla-Timestamp"] = str(timestamp)
+            headers["X-Wasla-Signature"] = sign_request(
+                self.keys, method, path, timestamp, data or b""
+            )
         request = urllib.request.Request(
             f"{self.base_url}{path}",
             data=data,
             method=method,
-            headers={"Content-Type": "application/json; charset=utf-8"},
+            headers=headers,
         )
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:

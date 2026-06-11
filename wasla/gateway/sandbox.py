@@ -17,8 +17,12 @@ import argparse
 import json
 import re
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from token_engine.errors import InvalidSignature
+
+from .auth import Unauthorized, verify_request
 from .service import GatewayService
 
 MAX_BODY_BYTES = 5 * 1024 * 1024  # دفعة تسوية مدينة كاملة تبقى دون هذا بكثير
@@ -38,24 +42,49 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _read_json(self) -> dict:
+    def _read_body(self) -> bytes:
         length = int(self.headers.get("Content-Length", 0))
-        if not 0 < length <= MAX_BODY_BYTES:
+        if not 0 <= length <= MAX_BODY_BYTES:
             raise ValueError("حجم طلب غير مقبول")
-        data = json.loads(self.rfile.read(length).decode("utf-8"))
+        return self.rfile.read(length) if length else b""
+
+    def _json(self, body: bytes) -> dict:
+        data = json.loads(body.decode("utf-8"))
         if not isinstance(data, dict):
             raise ValueError("جسم الطلب يجب أن يكون كائن JSON")
         return data
+
+    def _authenticate(self, path: str, body: bytes) -> str:
+        """يتحقق من توقيع الطلب ويعيد معرّف الجهاز الموثَّق، أو يرفع Unauthorized."""
+        device = self.headers.get("X-Wasla-Device")
+        timestamp = self.headers.get("X-Wasla-Timestamp")
+        signature = self.headers.get("X-Wasla-Signature")
+        if not (device and timestamp and signature):
+            raise Unauthorized("طلب غير موقّع — المصادقة مطلوبة")
+        pubkey = self.service.pubkey_for(device)
+        if pubkey is None:
+            raise Unauthorized("جهاز غير مسجل")
+        try:
+            verify_request(pubkey, signature, self.command, path, int(timestamp), body, int(time.time()))
+        except (InvalidSignature, ValueError) as exc:
+            raise Unauthorized(str(exc)) from exc
+        return device
 
     def do_GET(self) -> None:
         try:
             match = re.fullmatch(r"/api/v1/balance/([0-9a-f]{16})", self.path)
             if match:
+                device = self._authenticate(self.path, b"")
+                if device != match.group(1):
+                    self._reply(403, {"error": "استعلام رصيد جهاز آخر غير مسموح"})
+                    return
                 self._reply(200, self.service.balance(match.group(1)))
             elif self.path == "/api/v1/reconciliation":
-                self._reply(200, self.service.reconciliation())
+                self._reply(200, self.service.reconciliation())  # تقرير تشغيلي مفتوح
             else:
                 self._reply(404, {"error": "مسار غير معروف"})
+        except Unauthorized as exc:
+            self._reply(401, {"error": str(exc)})
         except KeyError as exc:
             self._reply(404, {"error": str(exc)})
         except Exception as exc:  # حافة الخادم: لا انهيار على طلب سيئ
@@ -63,23 +92,34 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         try:
-            body = self._read_json()
+            body = self._read_body()
             if self.path == "/api/v1/accounts":
-                result = self.service.register(str(body["pubkey"]), int(body["daily_cap"]))
+                # التسجيل بوابة الانضمام — مفتوحة، والجسم نفسه يحمل المفتاح العام
+                data = self._json(body)
+                result = self.service.register(str(data["pubkey"]), int(data["daily_cap"]))
             elif self.path == "/api/v1/cash-in":
+                device = self._authenticate(self.path, body)
+                data = self._json(body)
+                if str(data["device_id"]) != device:
+                    self._reply(403, {"error": "تمويل حساب جهاز آخر غير مسموح"})
+                    return
                 result = self.service.cash_in(
-                    str(body["device_id"]), int(body["amount"]), str(body["reference"])
+                    str(data["device_id"]), int(data["amount"]), str(data["reference"])
                 )
             elif self.path == "/api/v1/settlements":
+                self._authenticate(self.path, body)  # يكفي أن يكون المُرسِل جهازاً مسجلاً
+                data = self._json(body)
                 result = self.service.settle(
-                    str(body["batch_id"]),
-                    list(body["tokens"]),
-                    now=int(body["now"]) if body.get("now") else None,
+                    str(data["batch_id"]),
+                    list(data["tokens"]),
+                    now=int(data["now"]) if data.get("now") else None,
                 )
             else:
                 self._reply(404, {"error": "مسار غير معروف"})
                 return
             self._reply(200, result)
+        except Unauthorized as exc:
+            self._reply(401, {"error": str(exc)})
         except (KeyError, ValueError, TypeError, json.JSONDecodeError) as exc:
             self._reply(400, {"error": f"طلب غير صالح: {exc}"})
         except Exception as exc:

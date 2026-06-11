@@ -57,8 +57,10 @@ def save_wallet(name: str, wallet: OfflineWallet) -> None:
     path.chmod(0o600)  # المفتاح الخاص داخله — لصاحب الملف فقط
 
 
-def client(args) -> GatewayClient:
-    return GatewayClient(args.gateway)
+def client(args, wallet=None) -> GatewayClient:
+    # كل طلب يُوقَّع بمفتاح الجهاز (إثبات حيازة) عدا التسجيل المفتوح
+    keys = wallet.keys if wallet is not None else None
+    return GatewayClient(args.gateway, keys=keys)
 
 
 def sdg(piasters: int) -> str:
@@ -85,11 +87,12 @@ def cmd_create(args) -> None:
     if path.exists():
         raise WaslaError(f"المحفظة «{args.name}» موجودة")
     wallet = OfflineWallet()
-    info = client(args).register(wallet.keys.public_key_hex, wallet.daily_cap)
+    gateway = client(args, wallet)
+    info = gateway.register(wallet.keys.public_key_hex, wallet.daily_cap)
     wallet.apply_settlement(0, info["chain_anchor"])
     if args.deposit:
         amount = parse_amount(args.deposit)
-        client(args).cash_in(wallet.device_id, amount, f"deposit-{uuid.uuid4().hex[:8]}")
+        gateway.cash_in(wallet.device_id, amount, f"deposit-{uuid.uuid4().hex[:8]}")
         wallet.offline_balance = amount
     save_wallet(args.name, wallet)
     print(f"أُنشئت محفظة «{args.name}» — معرّف الجهاز: {wallet.device_id}")
@@ -139,7 +142,7 @@ def cmd_settle(args) -> None:
     if not tokens:
         print("لا توكنات بانتظار التسوية")
         return
-    gateway = client(args)
+    gateway = client(args, wallet)
     batch_id = f"{wallet.device_id}-{uuid.uuid4().hex[:12]}"
     result = gateway.settle(batch_id, tokens, now=int(time.time()))
     info = gateway.balance(wallet.device_id)
@@ -164,7 +167,7 @@ def cmd_balance(args) -> None:
     print(f"  أُنفق اليوم    : {sdg(wallet.spent_today())} من سقف {sdg(wallet.daily_cap)}")
     print(f"  بانتظار تسوية : {len(wallet.sent_tokens)} مرسل، {len(wallet.received_tokens)} مستلم")
     try:
-        info = client(args).balance(wallet.device_id)
+        info = client(args, wallet).balance(wallet.device_id)
         frozen = " (مجمّد ⚠)" if info["frozen"] else ""
         print(f"  مسوّى في البنك : {sdg(info['balance'])}{frozen}")
     except WaslaError:

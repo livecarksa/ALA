@@ -130,6 +130,12 @@ class GatewayService:
                 raise
             return result
 
+    def pubkey_for(self, device_id: str) -> str | None:
+        """المفتاح العام المسجَّل للجهاز — تستخدمه طبقة المصادقة للتحقق."""
+        with self._lock:
+            account = self.engine.accounts.get(device_id)
+            return account.pubkey if account else None
+
     def balance(self, device_id: str) -> dict:
         with self._lock:
             if device_id not in self.engine.accounts and device_id not in self.engine.ledger.balances:

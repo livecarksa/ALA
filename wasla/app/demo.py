@@ -57,20 +57,23 @@ def _run_demo_body(now, db_path, say, log, active) -> dict:
     # ── [1] بيئة اختبار بنكك تعمل (HTTP + SQLite معمّرة)
     sandbox = BankakSandbox(db_path=db_path).start()
     active.append(sandbox)
-    bank = GatewayClient(sandbox.base_url)
-    say(f"\n[1] بيئة اختبار بنكك تعمل على {sandbox.base_url}")
+    say(f"\n[1] بيئة اختبار بنكك تعمل على {sandbox.base_url} — طلباتها موقّعة Ed25519")
     say(f"    قاعدة بيانات معمّرة: {db_path}")
 
-    # ── [2] التسجيل والإيداع (الشبكة لا تزال حية)
+    # ── [2] التسجيل والإيداع (الشبكة لا تزال حية). كل جهاز عميله الموقّع بمفتاحه.
     mother = OfflineWallet()  # الأم في بورتسودان — هاتف ذكي
     grocer = OfflineWallet()  # البقّال — هاتف ذكي يعرض QR
     brother = OfflineWallet()  # الأخ — هاتف عادي يستقبل SMS فقط
+
+    def bank_for(wallet):
+        return GatewayClient(sandbox.base_url, keys=wallet.keys)
 
     for wallet, deposit, label in [
         (mother, 150_000, "الأم (وصلها تحويل الشتات: 1,500 جنيه)"),
         (grocer, 0, "البقّال"),
         (brother, 0, "الأخ (هاتف عادي)"),
     ]:
+        bank = bank_for(wallet)
         info = bank.register(wallet.keys.public_key_hex, wallet.daily_cap)
         if deposit:
             bank.cash_in(wallet.device_id, deposit, f"remit-{uuid.uuid4().hex[:8]}")
@@ -112,6 +115,7 @@ def _run_demo_body(now, db_path, say, log, active) -> dict:
         tokens = wallet.tokens_for_settlement()
         if not tokens:
             continue
+        bank = bank_for(wallet)
         result = bank.settle(f"{wallet.device_id}-{uuid.uuid4().hex[:8]}", tokens, now=now + 3600)
         say(f"    {label}: رفع {len(tokens)} — سُوّي {len(result['settled'])}"
             f"، مكرر {sum(1 for r in result['rejected'] if r['reason'] == 'DUPLICATE')}")
@@ -125,10 +129,12 @@ def _run_demo_body(now, db_path, say, log, active) -> dict:
     active.remove(sandbox)
     sandbox2 = BankakSandbox(db_path=db_path).start()
     active.append(sandbox2)
-    bank2 = GatewayClient(sandbox2.base_url)
 
-    balances = {label: bank2.balance(w.device_id)["balance"] for label, w in wallets.items()}
-    recon = bank2.reconciliation()
+    balances = {
+        label: GatewayClient(sandbox2.base_url, keys=w.keys).balance(w.device_id)["balance"]
+        for label, w in wallets.items()
+    }
+    recon = GatewayClient(sandbox2.base_url).reconciliation()
     say("    الأرصدة بعد إعادة التشغيل (لا فقد ولا تكرار):")
     for label, balance in balances.items():
         say(f"      {label}: {sdg(balance)}")

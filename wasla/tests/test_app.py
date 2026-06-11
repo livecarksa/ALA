@@ -48,7 +48,9 @@ class TestCli:
             assert "200.50" in out  # وصل المبلغ مسوّى
             from gateway.client import GatewayClient
 
-            assert GatewayClient(box.base_url).balance(omer_id)["balance"] == 20_050
+            omer = cli.load_wallet("omer")  # عميل موقّع بمفتاح عمر
+            client = GatewayClient(box.base_url, keys=omer.keys)
+            assert client.balance(omer_id)["balance"] == 20_050
         finally:
             box.stop()
 
