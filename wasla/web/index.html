@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>وصلة — Wasla · Offline Payments Demo</title>
+  <meta name="description" content="ديمو حي لطبقة الدفع الأوف لاين وصلة — Live demo of Wasla offline signed-token payments" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <button id="langBtn" class="lang-btn" type="button">English</button>
+    <h1 data-i18n="title">وصلة</h1>
+    <p class="tagline" data-i18n="tagline">طبقة الدفع التي لا تسقط مع الشبكة</p>
+    <p class="subtitle" data-i18n="subtitle"></p>
+    <div id="netStatus" class="net net-up"></div>
+  </header>
+
+  <main class="grid">
+    <section class="panel">
+      <h2 data-i18n="sec_devices">الأجهزة</h2>
+      <div id="devices" class="devices"></div>
+    </section>
+
+    <section class="panel">
+      <h2 data-i18n="sec_controls">خطوات الديمو</h2>
+      <div class="controls">
+        <button id="btnSetup"  class="step" type="button" data-i18n="btn_setup"></button>
+        <button id="btnDown"   class="step" type="button" data-i18n="btn_down"></button>
+        <button id="btnQR"     class="step" type="button" data-i18n="btn_qr"></button>
+        <button id="btnSMS"    class="step" type="button" data-i18n="btn_sms"></button>
+        <button id="btnAttack" class="step danger" type="button" data-i18n="btn_attack"></button>
+        <button id="btnSettle" class="step primary" type="button" data-i18n="btn_settle"></button>
+      </div>
+      <button id="btnReset" class="reset" type="button" data-i18n="btn_reset"></button>
+      <div id="tokenCard" class="token-card" style="display:none"></div>
+    </section>
+
+    <section class="panel">
+      <h2 data-i18n="sec_log">سجل الأحداث</h2>
+      <div id="log" class="log"></div>
+    </section>
+
+    <section class="panel">
+      <h2 data-i18n="sec_bank">بيئة بنكك — التسوية والدفتر</h2>
+      <div id="bank" class="bank"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p data-i18n="foot_crypto"></p>
+    <p class="muted" data-i18n="foot_proto"></p>
+  </footer>
+
+  <script src="wasla-engine.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
