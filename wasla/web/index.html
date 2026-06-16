@@ -2,48 +2,112 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>وصلة — Wasla · Offline Payments Demo</title>
-  <meta name="description" content="ديمو حي لطبقة الدفع الأوف لاين وصلة — Live demo of Wasla offline signed-token payments" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>وصلة · Wasla · Offline Payments</title>
+  <meta name="description" content="ديمو وصلة متعدد الأجهزة — Wasla multi-device offline payments demo (AR / EN / SW)" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="hero">
-    <button id="langBtn" class="lang-btn" type="button">English</button>
+    <div class="langbar">
+      <button class="lang-opt" data-lang="ar" type="button">العربية</button>
+      <button class="lang-opt" data-lang="en" type="button">English</button>
+      <button class="lang-opt" data-lang="sw" type="button">Kiswahili</button>
+    </div>
     <h1 data-i18n="title">وصلة</h1>
-    <p class="tagline" data-i18n="tagline">طبقة الدفع التي لا تسقط مع الشبكة</p>
+    <p class="tagline" data-i18n="tagline"></p>
     <p class="subtitle" data-i18n="subtitle"></p>
-    <div id="netStatus" class="net net-up"></div>
+    <span class="net" data-i18n="net_offline"></span>
   </header>
 
-  <main class="grid">
-    <section class="panel">
-      <h2 data-i18n="sec_devices">الأجهزة</h2>
-      <div id="devices" class="devices"></div>
-    </section>
-
-    <section class="panel">
-      <h2 data-i18n="sec_controls">خطوات الديمو</h2>
-      <div class="controls">
-        <button id="btnSetup"  class="step" type="button" data-i18n="btn_setup"></button>
-        <button id="btnDown"   class="step" type="button" data-i18n="btn_down"></button>
-        <button id="btnQR"     class="step" type="button" data-i18n="btn_qr"></button>
-        <button id="btnSMS"    class="step" type="button" data-i18n="btn_sms"></button>
-        <button id="btnAttack" class="step danger" type="button" data-i18n="btn_attack"></button>
-        <button id="btnSettle" class="step primary" type="button" data-i18n="btn_settle"></button>
+  <main>
+    <!-- اختيار الدور -->
+    <section id="roleSelect" class="panel">
+      <h2 data-i18n="pick_role"></h2>
+      <div class="roles">
+        <button id="pickSender" class="role-card" type="button">
+          <span class="role-emoji">📤</span>
+          <span class="role-name" data-i18n="role_sender"></span>
+          <span class="role-desc" data-i18n="role_sender_d"></span>
+        </button>
+        <button id="pickReceiver" class="role-card" type="button">
+          <span class="role-emoji">📥</span>
+          <span class="role-name" data-i18n="role_receiver"></span>
+          <span class="role-desc" data-i18n="role_receiver_d"></span>
+        </button>
+        <button id="pickSettlement" class="role-card" type="button">
+          <span class="role-emoji">🏛️</span>
+          <span class="role-name" data-i18n="role_settlement"></span>
+          <span class="role-desc" data-i18n="role_settlement_d"></span>
+        </button>
       </div>
-      <button id="btnReset" class="reset" type="button" data-i18n="btn_reset"></button>
-      <div id="tokenCard" class="token-card" style="display:none"></div>
+      <p class="hint" data-i18n="role_hint"></p>
     </section>
 
-    <section class="panel">
-      <h2 data-i18n="sec_log">سجل الأحداث</h2>
-      <div id="log" class="log"></div>
+    <!-- المُرسِل -->
+    <section id="panel-sender" class="panel role-panel" style="display:none">
+      <div class="panel-top">
+        <h2 data-i18n="role_sender"></h2>
+        <button class="change-role" type="button" data-i18n="change_role"></button>
+      </div>
+      <div class="bigrow"><span data-i18n="f_balance"></span><b id="senderBalance">—</b></div>
+      <label class="lbl" data-i18n="f_recipient"></label>
+      <div class="inline">
+        <input id="recpId" type="text" inputmode="latin" data-ph="f_recipient" maxlength="16" />
+        <button id="recpScan" class="ghost" type="button" data-i18n="scan_recipient"></button>
+      </div>
+      <label class="lbl" data-i18n="f_amount"></label>
+      <input id="amount" type="number" inputmode="decimal" value="350" min="0" step="0.01" />
+      <button id="makeBtn" class="primary" type="button" data-i18n="create_transfer"></button>
+      <button id="fraudBtn" class="danger" type="button" data-i18n="attempt_fraud" disabled></button>
+      <p class="hint small" data-i18n="fraud_hint"></p>
+      <div id="senderQRwrap" class="qrwrap" style="display:none">
+        <p class="hint" data-i18n="show_qr_hint"></p>
+        <canvas id="senderQR" width="240" height="240"></canvas>
+        <div id="senderTokInfo" class="tokinfo"></div>
+        <button id="senderCopy" class="ghost" type="button" data-i18n="copy"></button>
+      </div>
     </section>
 
-    <section class="panel">
-      <h2 data-i18n="sec_bank">بيئة بنكك — التسوية والدفتر</h2>
-      <div id="bank" class="bank"></div>
+    <!-- المُستلِم -->
+    <section id="panel-receiver" class="panel role-panel" style="display:none">
+      <div class="panel-top">
+        <h2 data-i18n="role_receiver"></h2>
+        <button class="change-role" type="button" data-i18n="change_role"></button>
+      </div>
+      <div class="qrwrap">
+        <p class="hint" data-i18n="my_id"></p>
+        <canvas id="myIdQR" width="180" height="180"></canvas>
+        <div id="myIdText" class="mono"></div>
+        <button id="myIdCopy" class="ghost" type="button" data-i18n="copy"></button>
+      </div>
+      <button id="scanTransferBtn" class="primary" type="button" data-i18n="scan_transfer"></button>
+      <div id="receiverStatus" class="status"></div>
+      <div class="bigrow"><span data-i18n="received_list"></span><b id="receivedTotal">—</b></div>
+      <div id="receivedList" class="list"></div>
+      <button id="showSettleBtn" class="ghost" type="button" data-i18n="show_for_settlement" disabled></button>
+      <div id="receiverShowWrap" class="qrwrap" style="display:none">
+        <canvas id="receiverShowQR" width="240" height="240"></canvas>
+        <div id="receiverShowInfo" class="tokinfo"></div>
+        <button id="receiverNext" class="ghost" type="button">↻</button>
+      </div>
+    </section>
+
+    <!-- محطة التسوية -->
+    <section id="panel-settlement" class="panel role-panel" style="display:none">
+      <div class="panel-top">
+        <h2 data-i18n="role_settlement"></h2>
+        <button class="change-role" type="button" data-i18n="change_role"></button>
+      </div>
+      <button id="scanTokenBtn" class="primary" type="button" data-i18n="scan_token"></button>
+      <div id="pendingCount" class="status"></div>
+      <button id="settleBtn" class="danger wide" type="button" data-i18n="settle_now" disabled></button>
+      <div id="settleResults" style="display:none">
+        <h3 data-i18n="settled_h"></h3><div id="resSettled" class="reslist"></div>
+        <h3 data-i18n="rejected_h"></h3><div id="resRejected" class="reslist"></div>
+        <h3 data-i18n="frozen_h"></h3><div id="resFrozen" class="reslist"></div>
+        <div id="resRecon" class="reslist"></div>
+      </div>
     </section>
   </main>
 
@@ -52,8 +116,29 @@
     <p class="muted" data-i18n="foot_proto"></p>
   </footer>
 
+  <!-- طبقة الماسح -->
+  <div id="scanOverlay" class="overlay" style="display:none">
+    <div class="scanbox">
+      <p class="scan-title" data-i18n="scan_title"></p>
+      <video id="scanVideo" playsinline></video>
+      <canvas id="scanCanvas" style="display:none"></canvas>
+      <div id="scanHint" class="status"></div>
+      <p class="hint" data-i18n="paste_instead"></p>
+      <textarea id="pasteBox" data-ph="paste_ph" rows="3"></textarea>
+      <div class="inline">
+        <button id="pasteUse" class="primary" type="button" data-i18n="use_paste"></button>
+        <button id="scanCancel" class="ghost" type="button" data-i18n="cancel"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="vendor/qrcode.js"></script>
+  <script src="vendor/jsQR.js"></script>
   <script src="wasla-engine.js"></script>
   <script src="i18n.js"></script>
+  <script src="qr-ui.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

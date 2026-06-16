@@ -104,6 +104,38 @@ async function fundedWallet(engine, balance, dailyCap) {
     check("recipient not credited", e.balance(r.deviceId) === 0);
   }
 
+  console.log("QR transport codec — round-trip + fork survives transport");
+  {
+    const GENESIS = "0".repeat(64);
+    const sk = await W.DeviceKeys.generate();
+    const wallet = new W.OfflineWallet(sk, { offlineBalance: 150000, dailyCap: 500000, chainAnchor: GENESIS });
+    const r1 = (await W.DeviceKeys.generate()).deviceId;
+    const r2 = (await W.DeviceKeys.generate()).deviceId;
+
+    const legit = await wallet.send(r1, 35000, 1700000000);
+    const qr = W.encodeTokenQR(legit);
+    check("transfer QR is compact (<300 chars)", qr.startsWith("WSLTX:") && qr.length < 300);
+    const back = await W.decodeTokenQR(qr);
+    const cj = W.canonicalJson;
+    const pay = (t) => ({ token_id: t.token_id, sender_id: t.sender_id, sender_pubkey: t.sender_pubkey, recipient_id: t.recipient_id, amount: t.amount, currency: t.currency, seq: t.seq, prev_hash: t.prev_hash, issued_at: t.issued_at, expires_at: t.expires_at, signature: t.signature });
+    check("QR round-trip preserves every field", cj(pay(back)) === cj(pay(legit)));
+    check("ID QR round-trip", W.decodeIdQR(W.encodeIdQR(r1)) === r1);
+
+    // fork to a second recipient, both pushed through the codec, settled
+    const forged = await W.createToken(sk, r2, 35000, legit.seq, legit.prev_hash, 1700000001, W.MAX_TOKEN_TTL);
+    const t1 = await W.decodeTokenQR(W.encodeTokenQR(legit));
+    const t2 = await W.decodeTokenQR(W.encodeTokenQR(forged));
+    const e = new W.SettlementEngine();
+    const acct = await e.registerDevice(sk.publicKeyHex, 100000000);
+    acct.chainAnchor = GENESIS;
+    e.cashIn(acct.deviceId, 100000000, "fund");
+    const rep = await e.settleBatch([t1, t2], 1700003600);
+    check("after QR transport: one settles", rep.settled.length === 1);
+    check("after QR transport: fork caught", rep.rejected.some((x) => x[1] === "DOUBLE_SPEND"));
+    check("after QR transport: sender frozen", e.accounts[acct.deviceId].frozen === true);
+    check("after QR transport: ledger balances", e.trialBalance() === 0);
+  }
+
   console.log("\n" + (failed === 0 ? "ALL PASSED" : failed + " FAILED") + " — " + passed + " checks");
   process.exit(failed === 0 ? 0 : 1);
 })();

@@ -113,6 +113,83 @@
     if (now != null && now > t.expires_at) throw new Error("expired");
   }
 
+  // ---------- ترميز مضغوط للنقل بـ QR / compact QR transport codec ----------
+  // 187 بايت ثابتة → ~250 حرف Base64، فيتسع في رمز QR صغير قابل للمسح بسهولة.
+  const TX_PREFIX = "WSLTX:";
+  const ID_PREFIX = "WSLID:";
+  const WIRE_SIZE = 187;
+
+  function bytesToB64(bytes) {
+    let s = "";
+    for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s);
+  }
+  function b64ToBytes(b64) {
+    const s = atob(b64);
+    const a = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return a;
+  }
+  function putHex(arr, offset, hex, nbytes) {
+    const b = fromHex(hex);
+    if (b.length !== nbytes) throw new Error("hex field wrong length");
+    arr.set(b, offset);
+    return offset + nbytes;
+  }
+
+  function encodeTokenQR(t) {
+    const buf = new Uint8Array(WIRE_SIZE);
+    const dv = new DataView(buf.buffer);
+    let o = 0;
+    buf.set(enc.encode("WSL"), o); o += 3;
+    buf[o++] = 1; // version
+    o = putHex(buf, o, t.token_id, 16);
+    o = putHex(buf, o, t.sender_pubkey, 32);
+    o = putHex(buf, o, t.recipient_id, 8);
+    dv.setBigUint64(o, BigInt(t.amount)); o += 8;
+    buf.set(enc.encode((t.currency + "   ").slice(0, 3)), o); o += 3;
+    dv.setUint32(o, t.seq); o += 4;
+    o = putHex(buf, o, t.prev_hash, 32);
+    dv.setBigUint64(o, BigInt(t.issued_at)); o += 8;
+    dv.setBigUint64(o, BigInt(t.expires_at)); o += 8;
+    o = putHex(buf, o, t.signature, 64);
+    return TX_PREFIX + bytesToB64(buf);
+  }
+
+  async function decodeTokenQR(payload) {
+    payload = (payload || "").trim();
+    if (!payload.startsWith(TX_PREFIX)) throw new Error("not a Wasla transfer QR");
+    const buf = b64ToBytes(payload.slice(TX_PREFIX.length));
+    if (buf.length !== WIRE_SIZE) throw new Error("bad transfer payload size");
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const dec = new TextDecoder();
+    if (dec.decode(buf.slice(0, 3)) !== "WSL" || buf[3] !== 1) throw new Error("unknown header");
+    let o = 4;
+    const hex = (n) => { const h = toHex(buf.slice(o, o + n)); o += n; return h; };
+    const token_id = hex(16);
+    const sender_pubkey = hex(32);
+    const recipient_id = hex(8);
+    const amount = Number(dv.getBigUint64(o)); o += 8;
+    const currency = dec.decode(buf.slice(o, o + 3)).trim(); o += 3;
+    const seq = dv.getUint32(o); o += 4;
+    const prev_hash = hex(32);
+    const issued_at = Number(dv.getBigUint64(o)); o += 8;
+    const expires_at = Number(dv.getBigUint64(o)); o += 8;
+    const signature = hex(64);
+    const sender_id = (await sha256hex(fromHex(sender_pubkey))).slice(0, 16);
+    return { token_id, sender_id, sender_pubkey, recipient_id, amount, currency, seq, prev_hash, issued_at, expires_at, signature };
+  }
+
+  function encodeIdQR(deviceId) { return ID_PREFIX + deviceId; }
+  function decodeIdQR(payload) {
+    payload = (payload || "").trim();
+    if (!payload.startsWith(ID_PREFIX)) throw new Error("not a Wasla ID QR");
+    const id = payload.slice(ID_PREFIX.length);
+    if (!/^[0-9a-f]{16}$/.test(id)) throw new Error("bad device id");
+    return id;
+  }
+
+
   // ---------- المحفظة الأوف لاين ----------
   class OfflineWallet {
     constructor(keys, opts) {
@@ -319,6 +396,8 @@
   const api = {
     DeviceKeys, OfflineWallet, SettlementEngine,
     createToken, verifyToken, tokenHash, canonicalJson, sha256hex,
+    encodeTokenQR, decodeTokenQR, encodeIdQR, decodeIdQR,
+    toHex, fromHex, TX_PREFIX, ID_PREFIX,
     AGENT_CASH, MAX_TOKEN_TTL, DAY,
   };
   global.WaslaEngine = api;
