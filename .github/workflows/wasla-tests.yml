@@ -37,3 +37,24 @@ jobs:
           node-version: "22"
       - name: Run web demo engine test (Ed25519 in Node Web Crypto)
         run: node wasla/web/engine.test.js
+
+  wasla-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wasla/packages/wasla_core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart test
+      - name: Coverage gate (>= 90%, mandatory per plan)
+        run: |
+          dart test --coverage=coverage
+          dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
+          pct=$(awk -F: '/^LF/{lf+=$2} /^LH/{lh+=$2} END{printf "%d", 100*lh/lf}' coverage/lcov.info)
+          echo "line coverage: ${pct}%"
+          test "$pct" -ge 90
