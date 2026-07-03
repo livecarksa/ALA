@@ -38,6 +38,28 @@ jobs:
       - name: Run web demo engine test (Ed25519 in Node Web Crypto)
         run: node wasla/web/engine.test.js
 
+  settlement-sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply migrations and run SQL settlement tests
+        env:
+          PGPASSWORD: postgres
+        working-directory: wasla/supabase
+        run: |
+          export DATABASE_URL="postgres://postgres:postgres@localhost:5432/postgres"
+          bash tests/run.sh
+
   wasla-core:
     runs-on: ubuntu-latest
     defaults:
