@@ -181,19 +181,39 @@ final class _Partial {
   final Map<int, String> chunks = {};
 }
 
+/// أقصى رسائل قيد التجميع يحفظها الصندوق — الأقدم يُخلى عند التجاوز
+/// (يصدّ إغراق الذاكرة بمقاطع لا تكتمل أبداً).
+const int maxPendingSmsMessages = 8;
+
+/// كم رسالة مكتملة يتذكرها الصندوق ليصدّ مكرراتها المتأخرة بصمت.
+const int _completedMemory = 32;
+
 /// صندوق تجميع مقاطع واردة — يدير رسائل متداخلة من مرسلين مختلفين
 /// ويعيد الحمولة الكاملة فور اكتمال رسالتها وثبوت سلامتها.
 final class SmsInbox {
   final Map<String, _Partial> _partials = {};
 
+  /// آخر الرسائل المكتملة — المكرر الواصل بعد الاكتمال يُتجاهل بدل أن
+  /// يفتح «رسالة شبح» عالقة أو يعيد الحمولة مرة ثانية.
+  final Set<String> _completed = {};
+
   /// إضافة مقطع (نص مُدخل يدوياً أو وارد آلياً). تعيد الحمولة الكاملة
   /// عند اكتمال رسالتها، وإلا null. المكرر المطابق يُتجاهل بصمت.
   String? add(String rawSegment) {
     final segment = SmsSegment.parse(rawSegment);
-    final partial = _partials.putIfAbsent(segment.msgId, () => _Partial(segment.total));
+    if (_completed.contains(segment.msgId)) return null;
+    var partial = _partials[segment.msgId];
+    if (partial == null) {
+      while (_partials.length >= maxPendingSmsMessages) {
+        _partials.remove(_partials.keys.first); // الأقدم إدخالاً يُخلى.
+      }
+      partial = _Partial(segment.total);
+      _partials[segment.msgId] = partial;
+    }
     if (partial.total != segment.total) {
+      _partials.remove(segment.msgId); // إسقاط ذاتي — الإرسال التالي يبدأ نظيفاً.
       throw SmsReassemblyException(
-          'إجمالي متناقض للرسالة ${segment.msgId}: ${segment.total} بدل ${partial.total}');
+          'إجمالي متناقض للرسالة ${segment.msgId}: ${segment.total} بدل ${partial.total} — أُسقطت الرسالة');
     }
     final existing = partial.chunks[segment.part];
     if (existing != null && existing != segment.chunk) {
@@ -207,10 +227,15 @@ final class SmsInbox {
 
     final payload =
         [for (var p = 1; p <= partial.total; p++) partial.chunks[p]!].join();
-    _partials.remove(segment.msgId); // اكتملت — نجاحاً أو فشل سلامة، تُزال.
+    _partials.remove(segment.msgId);
     if (_messageId(payload) != segment.msgId) {
+      // لا تُسجَّل مكتملةً: إعادة إدخال الأجزاء الصحيحة يجب أن تُقبل.
       throw const SmsChecksumException(
           'سلامة الرسالة المجمَّعة لا تثبت — أعد إدخال الأجزاء كلها');
+    }
+    _completed.add(segment.msgId);
+    while (_completed.length > _completedMemory) {
+      _completed.remove(_completed.first);
     }
     return payload;
   }

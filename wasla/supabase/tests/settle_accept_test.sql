@@ -142,6 +142,42 @@ begin
 end $$;
 
 -- ===========================================================================
+-- حساب معلّق موروث من 0002 (pending:) ليس مستلماً مسجّلاً.
+insert into accounts (device_id, pubkey) values
+  ('s6','k6'), ('legacy_pending','pending:legacy_pending');
+insert into reservations (device_id, epoch, reserved, remaining, daily_cap, chain_anchor)
+  values ('s6', 0, 50000, 50000, 500000, 'a6');
+do $$
+declare r text;
+begin
+  r := settle_accept('w1','s6','legacy_pending',1000,'SDG',0,'a6','h_w1','2025-06-05');
+  perform assert_eq(r, 'unregistered_recipient', 'الحساب المعلّق يُرفض كمستلم');
+  perform assert_eq((select balance from accounts where device_id='legacy_pending'),
+        0::bigint, 'لا قيد على حساب معلّق');
+end $$;
+
+-- ===========================================================================
+-- انفكاك السلسلة: توكن مرفوض لمستلم غير مسجّل يحجز اللاحق (chain_broken)،
+-- وبعد تسجيل المستلم وإعادة رفعه تنفك السلسلة كلها بالترتيب.
+insert into accounts (device_id, pubkey) values ('s7','k7');
+insert into reservations (device_id, epoch, reserved, remaining, daily_cap, chain_anchor)
+  values ('s7', 0, 50000, 50000, 500000, 'a7');
+do $$
+declare r text;
+begin
+  r := settle_accept('c1','s7','ghost3',1000,'SDG',0,'a7','h_c1','2025-06-06');
+  perform assert_eq(r, 'unregistered_recipient', 'رأس السلسلة لمستلم غير مسجّل يُرفض');
+  r := settle_accept('c2','s7','rr',1000,'SDG',1,'h_c1','h_c2','2025-06-06');
+  perform assert_eq(r, 'chain_broken', 'اللاحق محجوز حتى يُسوّى رأسه');
+  -- تسجيل المستلم ثم إعادة الرفع بالترتيب: السلسلة تنفك كلها.
+  insert into accounts (device_id, pubkey) values ('ghost3','kg3');
+  r := settle_accept('c1','s7','ghost3',1000,'SDG',0,'a7','h_c1','2025-06-06');
+  perform assert_eq(r, 'settled', 'رأس السلسلة يُقبل بعد التسجيل');
+  r := settle_accept('c2','s7','rr',1000,'SDG',1,'h_c1','h_c2','2025-06-06');
+  perform assert_eq(r, 'settled', 'اللاحق ينفك تلقائياً بعد تسوية رأسه');
+end $$;
+
+-- ===========================================================================
 -- تجديد الحجز والمطابقة صفر فروقات.
 do $$
 declare v_new reservations%rowtype; v_disc bigint;

@@ -44,8 +44,10 @@ final class MalformedSmsSegmentException extends WaslaException {
   const MalformedSmsSegmentException(super.message);
 }
 
-/// مجموع تحقق SMS لا يطابق — خطأ إدخال يدوي على الأغلب؛ يُعاد إدخال
-/// الجزء المصاب فقط. (سلامة إدخال لا أمن — الأمن من توقيع التوكن.)
+/// مجموع تحقق SMS لا يطابق — خطأ إدخال يدوي على الأغلب. حين يُعرف
+/// [part] يُعاد إدخال ذلك الجزء وحده؛ وحين يكون null فسلامة الرسالة
+/// المجمَّعة كلها لم تثبت وتُعاد الأجزاء جميعاً.
+/// (سلامة إدخال لا أمن — الأمن من توقيع التوكن.)
 final class SmsChecksumException extends WaslaException {
   const SmsChecksumException(super.message, {this.part});
 

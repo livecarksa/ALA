@@ -10,6 +10,12 @@
 -- ترتيب مقصود لكشف الاحتيال: فحص المستلم يأتي **بعد** كشف التفرع —
 -- توكن متفرع لمستلم غير مسجّل يجب أن يُسجَّل في conflicts ويجمّد
 -- المحتال، لا أن يُحجب خلف رفض أخف.
+--
+-- أثر ملازم للسياسة الصارمة (مقصود وموثّق): توكن مرفوض لمستلم غير
+-- مسجّل يحجز بقية سلسلة مرسله (اللاحق يعود chain_broken) إلى أن
+-- يُسجَّل المستلم ويُعاد رفع التوكن ضمن صلاحيته — فتنفك السلسلة كلها
+-- (اختبار «انفكاك السلسلة» أدناه يثبت الدورة كاملة). حسابات 0002
+-- المعلّقة (pubkey يبدأ بـ pending:) ليست عملاء مسجّلين وتُرفض كمستلمين.
 
 -- سلامة مرجعية على مستوى القاعدة: المستلم المسجَّل شرط للتسجيل النهائي.
 comment on column settled_tokens.recipient_id is
@@ -48,8 +54,14 @@ begin
     return 'duplicate';
   end if;
 
-  -- 2) قفل حساب المرسل لتسلسل الحركة (يمنع سباق دفعتين متزامنتين).
-  select frozen into v_frozen from accounts where device_id = p_sender_id for update;
+  -- 2) قفل حسابَي الطرفين بترتيب معرّفي ثابت: ترتيب اكتساب موحّد عبر كل
+  --    المعاملات يمنع deadlock بين تسويتين متقابلتين (A→B مع B→A) كان
+  --    قيد FK الجديد يفجّره (FOR KEY SHARE للمستلم ضد FOR UPDATE للمرسل).
+  perform 1 from accounts
+    where device_id in (p_sender_id, p_recipient_id)
+    order by device_id
+    for update;
+  select frozen into v_frozen from accounts where device_id = p_sender_id;
   if not found then
     raise exception 'unregistered sender %', p_sender_id;
   end if;
@@ -86,9 +98,12 @@ begin
     return 'chain_broken';
   end if;
 
-  -- 6) المستلم عميل بنكك مسجّل؟ لا فتح حسابات معلّقة عند التسوية —
-  --    بلا قفل صف هنا: القيد يُحسم عند حركة الرصيد في الخطوة 9.
-  if not exists (select 1 from accounts where device_id = p_recipient_id) then
+  -- 6) المستلم عميل بنكك مسجّل؟ حسابات 0002 المعلّقة (pending:) ليست
+  --    عملاء مسجّلين — لا تتجاوز السياسة عبر إرث قديم. (القفل أُخذ في 2.)
+  if not exists (
+      select 1 from accounts
+       where device_id = p_recipient_id
+         and pubkey not like 'pending:%') then
     return 'unregistered_recipient';
   end if;
 
@@ -116,6 +131,14 @@ begin
       p_seq, p_prev_hash, p_token_hash, v_reservation.id);
   exception
     when unique_violation then
+      -- انتهاكان مختلفان يصلان هنا ويجب التمييز بينهما:
+      --   • المفتاح الأساسي token_id: إعادة رفع متزامنة لنفس التوكن
+      --     التزمت للتو في معاملة أخرى — duplicate بريء لا احتيال
+      --     (بدون هذا الفحص كان المرسل البريء يُجمَّد بتعارض زائف).
+      --   • القيد الفريد (sender_id, prev_hash): تفرع حقيقي.
+      if exists (select 1 from settled_tokens where token_id = p_token_id) then
+        return 'duplicate';
+      end if;
       select * into v_existing
         from settled_tokens where sender_id = p_sender_id and prev_hash = p_prev_hash;
       insert into conflicts (sender_id, prev_hash, existing_token_id, forked_token_id, amount)

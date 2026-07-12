@@ -143,6 +143,40 @@ void main() {
       expect(inbox.pending, isEmpty);
     });
 
+    test('المكرر بعد الاكتمال يُصدّ بصمت: لا حمولة ثانية ولا رسالة شبح', () async {
+      final payload = await _realPayload();
+      final segments = splitTokenPayloadForSms(payload);
+      final inbox = SmsInbox();
+      for (final s in segments.take(segments.length - 1)) {
+        inbox.add(s);
+      }
+      expect(inbox.add(segments.last), payload);
+      expect(inbox.add(segments.first), isNull, reason: 'مكرر متأخر لا يعيد فتح الرسالة');
+      expect(inbox.pending, isEmpty, reason: 'لا شبح في pending');
+      // رسالة المقطع الواحد: الحمولة تعود مرة واحدة فقط.
+      final single = splitTokenPayloadForSms('W1:TEST99').single;
+      expect(inbox.add(single), 'W1:TEST99');
+      expect(inbox.add(single), isNull);
+    });
+
+    test('حدّ الرسائل قيد التجميع: الأقدم يُخلى ولا نمو بلا سقف', () {
+      final payloads = [
+        for (var i = 0; i < maxPendingSmsMessages + 1; i++)
+          'W1:${'A' * smsChunkChars}$i', // مقطعان لكل حمولة
+      ];
+      final inbox = SmsInbox();
+      final firstParts = [
+        for (final p in payloads) splitTokenPayloadForSms(p).first,
+      ];
+      for (final s in firstParts) {
+        inbox.add(s);
+      }
+      expect(inbox.pending.length, maxPendingSmsMessages);
+      final oldestId = SmsSegment.parse(firstParts.first).msgId;
+      expect(inbox.pending.any((st) => st.msgId == oldestId), isFalse,
+          reason: 'الأقدم إدخالاً هو المُخلى');
+    });
+
     test('رسالتان متداخلتان من مرسلين تكتملان مستقلتين', () async {
       final payloadA = await _realPayload();
       final payloadB = await _realPayload();
@@ -210,8 +244,9 @@ void main() {
           throwsA(isA<MalformedSmsSegmentException>()));
     });
 
-    test('إجمالي متناقض لنفس الرسالة يُرفض تعارضاً', () async {
-      final segments = splitTokenPayloadForSms(await _realPayload());
+    test('إجمالي متناقض يُرفض ويُسقط الرسالة — التعافي بإعادة الإرسال', () async {
+      final payload = await _realPayload();
+      final segments = splitTokenPayloadForSms(payload);
       final first = SmsSegment.parse(segments.first);
       final inbox = SmsInbox()..add(segments.first);
       final liar = SmsSegment(
@@ -222,6 +257,23 @@ void main() {
       );
       expect(() => inbox.add(liar.text),
           throwsA(isA<SmsReassemblyException>()));
+      expect(inbox.pending, isEmpty, reason: 'الرسالة المسمومة تُسقط لا تُقفل');
+      // مقطع مسموم وصل أولاً ثم مقاطع الضحية: أول مقطع شرعي يصطدم مرة
+      // واحدة ويُسقط السم، وإعادة الإرسال الكاملة تكتمل.
+      final poisoner = SmsSegment(
+        msgId: first.msgId,
+        part: 1,
+        total: first.total + 1,
+        chunk: first.chunk,
+      );
+      inbox.add(poisoner.text);
+      expect(() => inbox.add(segments.first),
+          throwsA(isA<SmsReassemblyException>()));
+      String? completed;
+      for (final s in segments) {
+        completed = inbox.add(s);
+      }
+      expect(completed, payload, reason: 'التعافي الذاتي دون forget يدوي');
     });
 
     test('جزء يصل مرتين بمحتوى مختلف يُسقط الرسالة كلها', () async {
