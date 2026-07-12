@@ -4,7 +4,7 @@ version: 1.1.0
 publish_to: none
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.8.0 # يشمل Dart المضمّن في Flutter المستقر — لا ميزات أحدث مستخدمة.
 
 # Add regular dependencies here.
 dependencies:
