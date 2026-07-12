@@ -115,6 +115,33 @@ begin
 end $$;
 
 -- ===========================================================================
+-- المستلم غير المسجّل يُرفض بلا أي أثر — بنكك فقط (هجرة 0003).
+insert into accounts (device_id, pubkey) values ('s5','k5');
+insert into reservations (device_id, epoch, reserved, remaining, daily_cap, chain_anchor)
+  values ('s5', 0, 50000, 50000, 500000, 'a5');
+do $$
+declare r text;
+begin
+  r := settle_accept('z1','s5','ghost_recipient',1000,'SDG',0,'a5','h_z1','2025-06-05');
+  perform assert_eq(r, 'unregistered_recipient', 'رفض مستلم غير مسجّل');
+  perform assert_eq((select remaining from reservations where device_id='s5'),
+        50000::bigint, 'رفض المستلم لا يخصم شيئاً');
+  perform assert_eq((select count(*)::int from accounts where device_id='ghost_recipient'),
+        0, 'لا يُفتح حساب معلّق');
+  perform assert_eq((select count(*)::int from settled_tokens where token_id='z1'),
+        0, 'لا تسجيل لتوكن مستلمه غير مسجّل');
+  -- التوكن نفسه يُقبل بإعادة الرفع بعد تسجيل المستلم لدى البنك.
+  insert into accounts (device_id, pubkey) values ('ghost_recipient','kg');
+  r := settle_accept('z1','s5','ghost_recipient',1000,'SDG',0,'a5','h_z1','2025-06-05');
+  perform assert_eq(r, 'settled', 'يُقبل بعد تسجيل المستلم');
+  -- أولوية كشف الاحتيال: تفرع نحو مستلم غير مسجّل يُكشف ويجمّد لا يُحجب.
+  r := settle_accept('z1fork','s5','ghost2',1000,'SDG',0,'a5','h_z1f','2025-06-05');
+  perform assert_eq(r, 'double_spend', 'التفرع يُكشف حتى لمستلم غير مسجّل');
+  perform assert_eq((select frozen from accounts where device_id='s5'),
+        true, 'تجميد المحتال رغم مستلم غير مسجّل');
+end $$;
+
+-- ===========================================================================
 -- تجديد الحجز والمطابقة صفر فروقات.
 do $$
 declare v_new reservations%rowtype; v_disc bigint;

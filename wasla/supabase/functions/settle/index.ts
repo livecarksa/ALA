@@ -23,7 +23,7 @@ interface SettleRequest {
 
 interface TokenResult {
   token_id: string;
-  status: string; // settled | duplicate | double_spend | daily_cap | ...
+  status: string; // settled | duplicate | double_spend | daily_cap | unregistered_recipient | ...
 }
 
 interface SettleResponse {
