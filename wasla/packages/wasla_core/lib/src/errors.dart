@@ -38,3 +38,23 @@ final class InsufficientReservationException extends WaslaException {
 final class WrongRecipientException extends WaslaException {
   const WrongRecipientException(super.message);
 }
+
+/// مقطع SMS ببنية غير صالحة (بادئة، حقول، محارف).
+final class MalformedSmsSegmentException extends WaslaException {
+  const MalformedSmsSegmentException(super.message);
+}
+
+/// مجموع تحقق SMS لا يطابق — خطأ إدخال يدوي على الأغلب؛ يُعاد إدخال
+/// الجزء المصاب فقط. (سلامة إدخال لا أمن — الأمن من توقيع التوكن.)
+final class SmsChecksumException extends WaslaException {
+  const SmsChecksumException(super.message, {this.part});
+
+  /// رقم الجزء المصاب إن عُرف؛ null تعني الرسالة المجمَّعة كلها.
+  final int? part;
+}
+
+/// تعارض أثناء إعادة تجميع مقاطع SMS: إجمالي متناقض لنفس الرسالة أو
+/// جزء يصل مرتين بمحتوى مختلف.
+final class SmsReassemblyException extends WaslaException {
+  const SmsReassemblyException(super.message);
+}

@@ -161,10 +161,11 @@ final class _CborReader {
 // الأبجدية ملائمة لوضع QR الأبجدي الرقمي (رموز أصغر وأسهل مسحاً).
 // ---------------------------------------------------------------------------
 
-const String _base45Alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ \$%*+-./:';
+/// أبجدية Base45 (RFC 9285) — عامة لفحوص القنوات (QR/SMS) على الحمولة.
+const String base45Alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ \$%*+-./:';
 
 final Map<int, int> _base45Reverse = {
-  for (var i = 0; i < _base45Alphabet.length; i++) _base45Alphabet.codeUnitAt(i): i,
+  for (var i = 0; i < base45Alphabet.length; i++) base45Alphabet.codeUnitAt(i): i,
 };
 
 /// ترميز بايتات إلى Base45.
@@ -172,15 +173,15 @@ String base45Encode(List<int> data) {
   final sb = StringBuffer();
   for (var i = 0; i + 1 < data.length; i += 2) {
     var v = data[i] * 256 + data[i + 1];
-    sb.write(_base45Alphabet[v % 45]);
+    sb.write(base45Alphabet[v % 45]);
     v ~/= 45;
-    sb.write(_base45Alphabet[v % 45]);
-    sb.write(_base45Alphabet[v ~/ 45]);
+    sb.write(base45Alphabet[v % 45]);
+    sb.write(base45Alphabet[v ~/ 45]);
   }
   if (data.length.isOdd) {
     final v = data.last;
-    sb.write(_base45Alphabet[v % 45]);
-    sb.write(_base45Alphabet[v ~/ 45]);
+    sb.write(base45Alphabet[v % 45]);
+    sb.write(base45Alphabet[v ~/ 45]);
   }
   return sb.toString();
 }

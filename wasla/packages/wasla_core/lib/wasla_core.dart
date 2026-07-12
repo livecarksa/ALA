@@ -9,5 +9,6 @@ export 'src/codec.dart';
 export 'src/errors.dart';
 export 'src/identity.dart';
 export 'src/reservation.dart';
+export 'src/sms.dart';
 export 'src/token.dart';
 export 'src/verify.dart';

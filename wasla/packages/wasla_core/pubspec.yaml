@@ -1,7 +1,7 @@
 name: wasla_core
-description: A starting point for Dart libraries or applications.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+description: محرك وصلة للتحويل الأوف لاين — سرّ تجاري، لا يُنشر خارج الفريق.
+version: 1.1.0
+publish_to: none
 
 environment:
   sdk: ^3.12.2
