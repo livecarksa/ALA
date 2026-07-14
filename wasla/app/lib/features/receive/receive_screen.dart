@@ -11,6 +11,7 @@ import '../../app.dart';
 import '../../core/error_text.dart';
 import '../../core/money.dart';
 import '../../core/wallet_controller.dart';
+import 'scan_screen.dart';
 
 class ReceiveScreen extends ConsumerStatefulWidget {
   const ReceiveScreen({super.key});
@@ -128,6 +129,17 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
           ),
           const SizedBox(height: 16),
           if (_mode == 0) ...[
+            FilledButton.icon(
+              onPressed: () async {
+                final payload = await Navigator.of(context).push<String>(
+                  MaterialPageRoute(builder: (_) => const ScanScreen()),
+                );
+                if (payload != null && mounted) await _verify(payload);
+              },
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: Text(l.scanWithCamera),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _payloadField,
               minLines: 3,
@@ -141,7 +153,7 @@ class _ReceiveScreenState extends ConsumerState<ReceiveScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
+            OutlinedButton.icon(
               onPressed: () {
                 final text = _payloadField.text.trim();
                 if (text.isNotEmpty) _verify(text);

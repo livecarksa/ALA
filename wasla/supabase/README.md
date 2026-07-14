@@ -10,9 +10,12 @@ supabase/
 ├── migrations/
 │   ├── 0001_schema.sql        # accounts, reservations, settled_tokens, conflicts, daily_spend + RLS
 │   └── 0002_settle_accept.sql # الدوال الذرّية + عرض المطابقة
-├── functions/settle/
-│   ├── index.ts               # الدالة الطرفية: تحقق تشفيري ثم settle_accept بالترتيب
-│   └── verify.ts              # Ed25519 + التسلسل القانوني (مطابق لـ wasla_core)
+├── functions/
+│   ├── _shared/wallet.ts      # لقطة المحفظة ومرساة الحقبة (مشترك)
+│   ├── register/index.ts      # تسجيل جهاز: الهوية تُشتق من المفتاح، حجز حقبة 0
+│   └── settle/
+│       ├── index.ts           # تحقق تشفيري ثم settle_accept بالترتيب + تجديد وحالة محفظة
+│       └── verify.ts          # Ed25519 + التسلسل القانوني (مطابق لـ wasla_core)
 └── tests/
     ├── settle_accept_test.sql # 25 تأكيداً ضد Postgres حقيقي
     └── run.sh
@@ -34,7 +37,16 @@ DATABASE_URL=postgres://... supabase/tests/run.sh
 
 # الدالة الطرفية محلياً (تتطلب Supabase CLI + Deno)
 supabase functions serve settle
+
+# النشر لمشروع مخصص لوصلة (لا يُنشر لمشاريع live car — قاعدة الفصل)
+supabase db push && supabase functions deploy register settle
 ```
+
+## التحقق التكاملي بلا سحابة
+
+`tests/local_gateway.py` بوابة محلية بعقد الدوال الطرفية نفسه فوق
+Postgres المحلي — يثبت عقد عميل التطبيق ضد SQL الحقيقية قبل أي نشر
+(انظر `app/README.md` §التحقق التكاملي).
 
 ## التوافق التشفيري
 

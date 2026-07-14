@@ -1,9 +1,9 @@
-/// حالة المحفظة ومتحكمها — الجسر الوحيد بين الواجهة ومحرك wasla_core.
+/// حالة المحفظة ومتحكمها — الجسر الوحيد بين الواجهة ومحرك wasla_core،
+/// وطبقة التسوية خلفه عقد [SettlementApi]: محاكاة محلية للديمو أو HTTP
+/// نحو دوال Supabase الطرفية دون أي تغيير في الواجهة.
 ///
 /// المفتاح الخاص لا يلمس حالة التطبيق أبداً: البذرة تُحفظ في التخزين
 /// الآمن للنظام وتُحمَّل لبناء [DeviceIdentity] داخل المحرك فقط.
-/// التسوية هنا محاكاة محلية بواجهة قابلة للاستبدال بنداء دالة settle
-/// الطرفية (Supabase) دون مساس بالواجهة.
 library;
 
 import 'dart:convert';
@@ -13,8 +13,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:wasla_core/wasla_core.dart';
 
-/// رصيد الديمو على دفتر البنك بالقرش (لا يمس المحرك).
-const int demoBankBalancePiasters = 2543075;
+import 'settlement_api.dart';
+
+export 'settlement_api.dart'
+    show SettlementApi, LocalDemoSettlement, HttpSettlementApi,
+        SettlementApiException, demoBankBalancePiasters, settlementApiProvider;
 
 /// الحجز الأوف لاين الابتدائي للديمو بالقرش.
 const int demoReservedPiasters = 500000;
@@ -148,21 +151,20 @@ final walletProvider =
 
 class WalletController extends AsyncNotifier<WalletState> {
   late OfflineReservation _reservation;
+  late SettlementApi _api;
   final SmsInbox _inbox = SmsInbox();
   final List<WalletEvent> _history = [];
-  int _bankBalance = demoBankBalancePiasters;
+  int _bankBalance = 0;
   int _epoch = 0;
   bool _online = false;
   bool _settling = false;
 
   int _now() => DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-  String _anchorFor(String deviceId, int epoch) =>
-      sha256Hex(utf8.encode('anchor:$deviceId:$epoch'));
-
   @override
   Future<WalletState> build() async {
     final store = ref.read(seedStoreProvider);
+    _api = ref.read(settlementApiProvider);
     var seed = await store.load();
     DeviceIdentity identity;
     if (seed == null) {
@@ -172,10 +174,19 @@ class WalletController extends AsyncNotifier<WalletState> {
     } else {
       identity = await DeviceIdentity.fromSeed(seed);
     }
+    final registration = await _api.register(
+      deviceId: identity.deviceId,
+      pubkey: identity.publicKeyHex,
+      reservePiasters: demoReservedPiasters,
+      dailyCapPiasters: defaultDailyCapPiasters,
+    );
+    _bankBalance = registration.balance;
+    _epoch = registration.epoch;
     _reservation = OfflineReservation(
       identity: identity,
-      reservedBalance: demoReservedPiasters,
-      chainAnchor: _anchorFor(identity.deviceId, _epoch),
+      reservedBalance: registration.remaining,
+      chainAnchor: registration.chainAnchor,
+      dailyCap: registration.dailyCap,
     );
     return _snapshot();
   }
@@ -272,29 +283,37 @@ class WalletController extends AsyncNotifier<WalletState> {
     _publish();
   }
 
-  /// التسوية عند عودة الاتصال — محاكاة محلية لدالة settle الطرفية:
-  /// الوارد يُقيَّد على دفتر البنك، وتُفتح حقبة جديدة بمرساة جديدة.
+  /// التسوية عند عودة الاتصال عبر عقد [SettlementApi].
+  /// تعيد عدد ما سُوّي؛ وترمي [SettlementApiException] عند فشل الاتصال.
   Future<int> settle() async {
     if (!_online || _settling) return 0;
     final batch = _reservation.tokensForSettlement();
     if (batch.isEmpty) return 0;
     _settling = true;
     _publish();
-    // زمن ذهاب وإياب واقعي للعرض.
-    await Future<void>.delayed(const Duration(milliseconds: 900));
-    final receivedSum = _reservation.receivedTokens
-        .fold<int>(0, (sum, t) => sum + t.amount);
-    _bankBalance += receivedSum;
-    _epoch += 1;
-    _reservation.applySettlement(
-      newBalance: _reservation.availableBalance,
-      newAnchor: _anchorFor(_reservation.deviceId, _epoch),
-    );
-    for (var i = 0; i < _history.length; i++) {
-      _history[i] = _history[i].asSettled();
+    try {
+      final outcome = await _api.settle(
+        deviceId: _reservation.deviceId,
+        batch: batch,
+      );
+      _bankBalance = outcome.balance;
+      _epoch = outcome.epoch;
+      _reservation.applySettlement(
+        newBalance: outcome.remaining >= 0
+            ? outcome.remaining
+            : _reservation.availableBalance,
+        newAnchor: outcome.chainAnchor,
+      );
+      final settled = outcome.settledIds.toSet();
+      for (var i = 0; i < _history.length; i++) {
+        if (settled.contains(_history[i].tokenId)) {
+          _history[i] = _history[i].asSettled();
+        }
+      }
+      return settled.length;
+    } finally {
+      _settling = false;
+      _publish();
     }
-    _settling = false;
-    _publish();
-    return batch.length;
   }
 }

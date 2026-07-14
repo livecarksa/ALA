@@ -9,6 +9,7 @@
 // المالية الحرجة تبقى في معاملة قاعدة واحدة لكل توكن.
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { freshAnchor, walletSnapshot } from "../_shared/wallet.ts";
 import {
   issuedDay,
   tokenHash,
@@ -19,6 +20,12 @@ import {
 interface SettleRequest {
   batch: WaslaToken[];
   now?: number;
+
+  /// جهاز الرافع — حين يُمرَّر تُعاد أرقام محفظته بعد المعالجة.
+  device_id?: string;
+
+  /// طلب فتح حقبة جديدة بمرساة جديدة بعد تسوية ناجحة كاملة.
+  renew?: boolean;
 }
 
 interface TokenResult {
@@ -31,6 +38,9 @@ interface SettleResponse {
   rejected: TokenResult[];
   frozen: string[];
   results: TokenResult[];
+
+  /// أرقام محفظة الرافع بعد المعالجة (حين يُمرَّر device_id).
+  wallet?: Record<string, unknown>;
 }
 
 // ترتيب سلسلة مرسل من المرساة: أب قبل ابن، الأسبق إصداراً أولاً عند التساوي.
@@ -119,12 +129,37 @@ export async function handleSettle(
   }
 
   const rejected = results.filter((r) => r.status !== "settled" && r.status !== "duplicate");
-  return {
+  const response: SettleResponse = {
     settled: results.filter((r) => r.status === "settled").length,
     rejected,
     frozen: [...frozen],
     results,
   };
+
+  if (request.device_id) {
+    // التجديد فقط حين سُوّي كل صادر الجهاز: تدوير المرساة مع صادر عالق
+    // كان سيقطع سلسلته نهائياً (chain_broken بلا تعافٍ).
+    const sentByDevice = request.batch.filter(
+      (t) => t.sender_id === request.device_id,
+    );
+    const sentStuck = results.some((r) =>
+      sentByDevice.some((t) => t.token_id === r.token_id) &&
+      r.status !== "settled" && r.status !== "duplicate"
+    );
+    if (request.renew && !sentStuck) {
+      const anchor = await freshAnchor(request.device_id, "renew");
+      const { error } = await db.rpc("renew_reservation", {
+        p_device_id: request.device_id,
+        p_new_anchor: anchor,
+        p_top_up: 0,
+      });
+      if (error) {
+        results.push({ token_id: "-", status: `renew_error:${error.code}` });
+      }
+    }
+    response.wallet = await walletSnapshot(db, request.device_id);
+  }
+  return response;
 }
 
 // نقطة الدخول الطرفية.
