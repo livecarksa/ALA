@@ -1,0 +1,20 @@
+{
+ "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+ "device_id": "56475aa75463474c",
+ "public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+ "canonical_payload": "{\"amount\":35000,\"currency\":\"SDG\",\"expires_at\":1750259200,\"issued_at\":1750000000,\"prev_hash\":\"95d523417b32dc6fae96137b1a35f8f024af51ac8bb8cbede8a90473c0fdef3b\",\"recipient_id\":\"aabbccddeeff0011\",\"sender_id\":\"56475aa75463474c\",\"sender_pubkey\":\"03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8\",\"seq\":0,\"token_id\":\"00112233445566778899aabbccddeeff\"}",
+ "token": {
+  "token_id": "00112233445566778899aabbccddeeff",
+  "sender_id": "56475aa75463474c",
+  "sender_pubkey": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+  "recipient_id": "aabbccddeeff0011",
+  "amount": 35000,
+  "currency": "SDG",
+  "seq": 0,
+  "prev_hash": "95d523417b32dc6fae96137b1a35f8f024af51ac8bb8cbede8a90473c0fdef3b",
+  "issued_at": 1750000000,
+  "expires_at": 1750259200,
+  "signature": "03ce486e0b29bad19ee7009bf549d6b108211433121a8fab1454924424815c0ef3c8b1929f20c817989f0e4f3b2eae39569f878f8cbb01d0ccbebef39a56d000"
+ },
+ "token_hash": "53023ba900385f65d41e6a40cf09fc7b2f725a91251efcea9b80b9f3c896dba5"
+}

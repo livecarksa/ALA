@@ -1,0 +1,18 @@
+name: wasla_core
+description: محرك وصلة للتحويل الأوف لاين — سرّ تجاري، لا يُنشر خارج الفريق.
+version: 1.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.0 # يشمل Dart المضمّن في Flutter المستقر — لا ميزات أحدث مستخدمة.
+
+# Add regular dependencies here.
+dependencies:
+  crypto: ^3.0.7
+  cryptography: ^2.9.0
+  # path: ^1.9.0
+
+dev_dependencies:
+  coverage: ^1.15.1
+  lints: ^6.0.0
+  test: ^1.31.2

@@ -1,0 +1,48 @@
+name: wasla-apk
+
+# بناء APK للتجربة على جهازين حقيقيين بوضع الطيران — يُحمَّل من
+# Artifacts في صفحة تشغيل الـworkflow. يدوي أو تلقائياً مع تغييرات التطبيق.
+on:
+  workflow_dispatch:
+    inputs:
+      settle_url:
+        description: "WASLA_SETTLE_URL (اختياري — فارغ يعني المحاكاة المحلية)"
+        required: false
+        default: ""
+      anon_key:
+        description: "WASLA_ANON_KEY (اختياري)"
+        required: false
+        default: ""
+  push:
+    paths:
+      - "wasla/app/**"
+      - "wasla/packages/**"
+      - ".github/workflows/wasla-apk.yml"
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wasla/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build release APK
+        run: >
+          flutter build apk --release
+          --dart-define=WASLA_SETTLE_URL=${{ github.event.inputs.settle_url || '' }}
+          --dart-define=WASLA_ANON_KEY=${{ github.event.inputs.anon_key || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasla-app-release-apk
+          path: wasla/app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14

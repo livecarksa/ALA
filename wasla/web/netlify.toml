@@ -1,0 +1,11 @@
+# إعداد Netlify — موقع ثابت بلا خطوة بناء.
+# Netlify config — static site, no build step. Publish this folder as-is.
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"

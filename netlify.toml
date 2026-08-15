@@ -1,0 +1,12 @@
+# ربط المستودع بـ Netlify: ينشر ديمو وصلة من wasla/web بلا خطوة بناء.
+# Netlify repo link: publishes the Wasla demo from wasla/web, no build step.
+[build]
+  publish = "wasla/web"
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    # الكاميرا تحتاج https؛ Netlify يوفّره تلقائياً. Camera needs https (Netlify provides it).
