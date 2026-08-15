@@ -42,6 +42,23 @@ supabase functions serve settle
 supabase db push && supabase functions deploy register settle
 ```
 
+## النشر الحي (PoC)
+
+منشور على مشروع Supabase مخصص لوصلة `wasla-poc` (منفصل تماماً عن مشاريع
+live car — قاعدة الفصل): الهجرات الثلاث مطبقة، والدالتان `register`
+و`settle` نشطتان بتفعيل JWT (المفتاح العلني anon كافٍ للاستدعاء).
+
+```bash
+# بناء التطبيق موصولاً بالبوابة المنشورة (المفتاح علني بطبيعته):
+flutter build apk --release \
+  --dart-define=WASLA_SETTLE_URL=https://bvyjjvwahkhjhbzckfwx.supabase.co \
+  --dart-define=WASLA_ANON_KEY=<المفتاح العلني anon من لوحة المشروع>
+```
+
+الخطة المجانية توقف المشروع تلقائياً بعد أسبوع خمول — يُستعاد من اللوحة
+(أو `restore_project`) قبل أي ديمو. `service_role` يبقى في متغيرات بيئة
+الدوال فقط، لا يلمس العميل أبداً.
+
 ## التحقق التكاملي بلا سحابة
 
 `tests/local_gateway.py` بوابة محلية بعقد الدوال الطرفية نفسه فوق
