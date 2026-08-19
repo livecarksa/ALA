@@ -1,592 +1,584 @@
 # Auto Live (أوتو لايف) — الملخص التوثيقي والاستراتيجي الشامل
 
-> **الحالة:** مرجع تطوير واستراتيجية — محدَّث بتاريخ **2026-08-19**
-> **الأسماء السابقة:** Live Car / لايف كار — وقبلها "Auto Life" في بعض المراسلات
+> **الإصدار:** 2.0 — 2026-08-19 · مبني على **المستودع الفعلي + قاعدة البيانات الحيّة**
+> **الأسماء السابقة:** لايف كار / Live Car (أُعيدت التسمية رسمياً 2026-07-23، ونُفّذت 2026-07-27)
 
 ---
 
-## 0. مصادر هذا التقرير وحدوده (اقرأ هذا أولاً)
+## 0. مصادر هذا التقرير
 
-هذا القسم موجود لأن دقّة المرجع أهم من طوله.
+### 0.1 تصحيح جوهري على الإصدار 1.0
 
-### 0.1 ما لم أستطع الوصول إليه
+الإصدار الأول من هذا الملف بُني على قاعدة البيانات وحدها، لأن مستودع `livecarksa/ALA` فارغ. **ذلك كان استنتاجاً ناقصاً**: الكود الحقيقي موجود في مستودع آخر — `livecarksa/LivCar` (خاص) — ويحتوي **874 ملفاً**، أربعة تطبيقات Flutter، و42 وثيقة داخلية. أربعة استنتاجات في الإصدار 1.0 كانت خاطئة وصُحّحت هنا (انظر §4.4).
 
-| المصدر المطلوب | الحالة |
+### 0.2 المصادر المعتمدة الآن
+
+| المصدر | ما استُخرج منه |
 |---|---|
-| **المحادثات السابقة** | ❌ غير متاحة. هذه جلسة جديدة بذاكرة فارغة — لا يوجد أرشيف محادثات على هذا الجهاز (`~/.claude/projects` يحتوي على جلسة اليوم فقط). |
-| **مستودع الكود** (`livecarksa/ALA`) | ⚠️ فارغ فعلياً — ملف `README.md` وحيد محتواه `# ALA`. لا كود مصدري، لا مخططات، لا وثائق سابقة. |
-| **مشروع FlutterFlow** | ❌ لا يوجد تصدير للكود في المستودع. |
-| **ملفات Figma / مخططات مرسومة** | ❌ لم يُعثر على أي منها. |
+| **`livecarksa/LivCar`** — الفرع النشط `claude/autolive-landing-redesign-sqa81f` (آخر دفعة **2026-08-19**) | 232 ملف Dart في 4 تطبيقات · 34 ملف SQL · `CLAUDE.md` · `PROGRESS.md` · `DECISIONS.md` · `GAP_REPORT.md` · `docs/ROADMAP.md` · `docs/LAUNCH.md` · `docs/council/` · `docs/legal/` · `docs/ops/` |
+| **Supabase `livecar-workshop`** (`xqtlicushtnmofgvikjz`) | 43 جدولاً · 19 View · ~102 دالة · **74 Migration** · سياسات RLS · تريغرات · فهارس · بيانات التشغيل الفعلية |
+| **8 Edge Functions منشورة** | الكود المصدري الكامل |
+| مهارة `flutterflow-livecar` | ⚠️ **قديمة ومضلِّلة** — انظر §4.5 |
 
-### 0.2 ما بنيتُ عليه هذا التقرير (مصادر موثّقة ومُتحقَّق منها)
+**ما زال غير متاح:** المحادثات السابقة (جلسة جديدة بلا أرشيف)، وملفات Figma.
 
-| المصدر | ما استخرجته |
-|---|---|
-| **قاعدة بيانات Supabase الحيّة** `livecar-workshop` (`xqtlicushtnmofgvikjz`) | 43 جدولاً، 19 View، ~102 دالة/RPC، **74 Migration** مؤرّخة من 2026-05-06 إلى 2026-08-16، سياسات RLS، Buckets، Realtime، وبيانات التشغيل الفعلية |
-| **Edge Functions المنشورة** (8 دوال) | الكود المصدري الكامل لمحرّك التشخيص، الـ OCR، الدفع، والإشعارات |
-| **بيانات التشغيل الفعلية** | 31 مستخدماً، 18 ورشة، 50 جلسة تشخيص، 18 طلباً، 10 عمليات دفع — أي أن المنتج **شغّال بمستخدمين حقيقيين**، ليس تصميماً على ورق |
-| **مهارة `flutterflow-livecar`** المثبّتة | هوية العلامة، قواعد الواجهة، معايير FlutterFlow، وأنماط التكامل المعتمدة |
-
-### 0.3 اصطلاح الثقة المستخدم في كل التقرير
-
-- ✅ **موثّق** — مُتحقَّق منه مباشرة من قاعدة البيانات أو كود Edge Function.
-- 🔶 **مستنتج** — استنتاج منطقي قوي من بنية البيانات، لكنه يحتاج تأكيدك.
-- ❓ **مفقود** — لا يوجد دليل؛ يحتاج إدخالاً منك.
-
-> **طلب واحد منك:** إن كانت لديك محادثات أو مستندات سابقة (استراتيجية، تسعير، دراسة جدوى، Figma)، ارفعها وسأدمجها في هذا الملف نفسه فيصبح المرجع الوحيد الكامل.
+### 0.3 اصطلاح الثقة
+✅ **موثّق** (كود أو قاعدة بيانات) · 🔶 **مستنتج** · ❓ **مفقود**
 
 ---
 
 ## 1. نظرة عامة ونموذج العمل
 
-### 1.1 وصف المشروع
+### 1.1 وصف المشروع ✅
 
-**أوتو لايف** منصّة سعودية (أولى مدنها **جدة**) تربط مالك السيارة بالورشة عبر **طبقة تشخيص ذكي** تسبق الحجز. الفكرة الجوهرية — والمثبتة في البنية — أن العميل **لا يُطلب منه أن يعرف عطله**؛ يصف الأعراض بلغته، فيستجوبه محرّك ذكاء اصطناعي بثلاثة أسئلة كحد أقصى، ثم يُخرج تشخيصاً مبدئياً + نطاق سعر واقعي + قرار سلامة (هل السيارة صالحة للقيادة؟)، وعندها فقط يدخل السوق ليستقبل عروض الورش.
+**أوتو لايف** منصّة سعودية تعرّف نفسها في `CLAUDE.md` بوضوح:
 
-هذا ليس "دليل ورش" ولا "تطبيق حجز" — بل **سوق مُدار بالمعلومة**، حيث المعلومة (التشخيص + السعر التقديري) هي ما يوازن اختلال المعرفة بين العميل والورشة.
+> «ليست تطبيق حجز عادي — هي **سجل رقمي حي لكل سيارة**» يربط العميل، الورشة، الشركاء (وكالات/كفرات/قطع غيار)، والجهات الحكومية (أبشر، نجم، تقدير، ناجز)، عبر محرّك ذكاء اصطناعي.
 
-### 1.2 المشكلة التي يعالجها 🔶
+**المسار الذهبي** كما تعرّفه `GAP_REPORT.md` حرفياً:
 
-البنية التقنية نفسها تكشف المشكلات المستهدَفة — كل مشكلة لها آلية مضادّة مبنيّة في القاعدة:
+> دخول ← إضافة سيارة ← تشخيص AI ← بثّ للورش ← **مزاد عكسي** ← قبول عرض ← طلب ← تتبّع حي ← سجل خدمة ← تقييم.
 
-| المشكلة في سوق صيانة السيارات | الآلية المضادة المبنيّة فعلياً ✅ |
+الفكرة الجوهرية ليست «دليل ورش» بل **مزاد عكسي مسبوق بتشخيص**: العميل لا يبحث عن ورشة — بل يصف عطله، فيستجوبه محرّك ذكاء اصطناعي بثلاثة أسئلة كحدّ أقصى، ثم **تتنافس الورش على طلبه**.
+
+### 1.2 المشكلة والآلية المضادة ✅
+
+| المشكلة | الآلية المبنيّة فعلياً |
 |---|---|
-| اختلال المعرفة: العميل لا يعرف عطله ولا سعره العادل | `ai_diagnostics` + `estimated_cost_min/max_sar` — نطاق سعر قبل دخول الورشة |
-| خطر السلامة: قيادة سيارة معطوبة جهلاً | `drive_safe` + `enforceSafety()` — تجاوز إجباري يرفع الخطورة لـ `urgent` عند ذكر الفرامل/المقود/الحرارة/الوقود/الوسائد الهوائية |
-| غموض التسعير وتغييره بعد الاستلام | `quotes` + `price_locked_at` + `enforce_price_lock` — قفل السعر بعد القبول |
-| صعوبة العثور على ورشة قريبة موثوقة | `match_workshops` (PostGIS) + `is_verified` + `rating_avg` |
-| ضياع سجل صيانة السيارة | `maintenance_logs` — يُكتب **تلقائياً** عند إقفال كل طلب |
-| غياب الفاتورة النظامية | `invoices` بضريبة 15% + رقم السجل التجاري والرقم الضريبي للورشة |
-| ورش بلا أدوات تشغيل رقمية | كونسول ورشة كامل: طابور طلبات، عروض، تفاوض، محادثة، منتجات، هوية بصرية |
+| العميل لا يعرف عطله ولا سعره العادل | `ai_diagnostics` + نطاق تكلفة + شريط ثقة % |
+| خطر قيادة سيارة معطوبة | `drive_safe` + `enforceSafety()` — حارس حتمي **على السيرفر لا في الـ APK** |
+| احتكار الورشة الواحدة للسعر | **المزاد العكسي** — `quotes` + `auction_room_screen` + تفاوض ثلاثي (قبول/مفاوضة/رفض) |
+| تغيير السعر بعد الاستلام | `enforce_price_lock` — تجميد السعر بعد الدفع و**قلب الطلب إلى `disputed` تلقائياً عند انحراف > 20%** |
+| ضياع سجل الصيانة | `maintenance_logs` + `trigger_orders_autolog` — يُكتب تلقائياً عند الإقفال |
+| غياب الفاتورة النظامية | `invoices` بضريبة 15% + **رمز ZATCA TLV QR** |
+| ورش بلا أدوات رقمية | كونسول ورشة كامل: لوحة KPI، كانبان، كونسول تشخيص، أرباح، تقييمات، هوية بصرية |
 
 ### 1.3 القيمة المقترحة
+- **للعميل:** «اعرف عطلك، ثم دع الورش تتنافس عليك» — تشخيص عربي فوري، عروض متعددة حيّة، سعر مقفل، سجل صيانة يتراكم تلقائياً.
+- **للورشة:** «طلبات مشخَّصة جاهزة بدل زبائن يتجوّلون» — بثّ فوري، أدوات تسعير وتفاوض، لوحة تشغيل SaaS، فوترة ضريبية، هوية بصرية.
+- **للمنصّة:** ملكية طبقة القرار (التشخيص + المزاد + التسعير) — الطبقة الوحيدة التي لا يمكن الالتفاف عليها.
 
-**للعميل:** «اعرف عطلك وسعره العادل قبل أن تدخل الورشة» — تشخيص عربي فوري، عروض متعددة تتنافس، سعر مقفل، وسجل صيانة يتراكم تلقائياً.
+### 1.4 شرائح العملاء ✅
 
-**للورشة:** «طلبات جاهزة ومشخّصة بدل زبائن يتجوّلون» — تدفّق طلبات مسبقة التشخيص، أدوات تسعير وتفاوض، لوحة تشغيل، فوترة ضريبية، وهوية بصرية داخل التطبيق.
-
-**للمنصّة:** ملكية طبقة القرار (التشخيص + المطابقة + التسعير) — وهي الطبقة الوحيدة التي لا يمكن للورشة أن تلتفّ عليها.
-
-### 1.4 شرائح العملاء المستهدفة ✅ (مثبتة في القاعدة)
-
-| الشريحة | الجدول/الدليل | الحالة الفعلية |
+| الشريحة | التطبيق | الحالة |
 |---|---|---|
-| **مالك السيارة الفرد** | `users` + `vehicles` + `user_preferences` | 31 مستخدماً، 5 مركبات |
-| **الورشة** (شريك أساسي) | `workshops` — `partner_type`, `subscription_plan`, `cr_number`, `vat_number` | 18 ورشة (4 نشطة في جدة، منها 2 موثّقة) |
-| **محلّ قطع الغيار** | `parts_shops` + `parts_requests` + `parts_quotes` | مبني بالكامل، **0 صفوف** — لم يُفعَّل بعد |
-| **مالك الأسطول / المشاركة العائلية** | `vehicle_shares` (`viewer` \| `manager`) | مبني، 0 صفوف |
-| **الإدارة الداخلية (Ops)** | `admin_capabilities` (`owner`/`ops`/`support`) + `ops_*` | مفعّل — مسؤول واحد |
+| **مالك السيارة** | `apps/client` — 85 ملف Dart + **APK منشور** (~40 MB) | 🟢 يعمل — 31 مستخدماً |
+| **الورشة** | `apps/workshop` — 73 ملف Dart | 🟢 يعمل — 18 ورشة (4 نشطة) |
+| **الإدارة / العمليات** | `apps/admin` — 52 ملف Dart (Flutter Web) | 🟢 يعمل — مسؤول واحد |
+| **محلّ قطع الغيار** | `apps/parts_shop` — 22 ملف Dart | 🟡 مبني، **0 محلات مسجّلة** |
+| **مالك الأسطول / المشاركة** | `vehicle_shares` | 🟡 مبني، 0 صفوف |
 
-### 1.5 نموذج الإيرادات ✅ (مستخرج من الجداول والدوال — ليس افتراضاً)
+**سوق الإطلاق:** جدة ومنطقة مكة المكرمة — أُعيد توجيه الإطلاق إليها بدل الرياض بناءً على شبكة شراكات حيّة (`EXPERT_COUNCIL_REPORT.md`).
 
-**المصدر الأول والمُفعّل: عمولة على الخدمة**
+### 1.5 نموذج الإيرادات ✅
 
-جدول `commission_rates` — نسبة لكل نوع خدمة، تُطبَّق في `complete_order()` وتُخزَّن في `orders.platform_fee`:
+**المُفعّل: عمولة على الخدمة** — `commission_rates` (14 فئة)، تُطبَّق في `complete_order()` وتُختم في `orders.platform_fee`:
 
-| نوع الخدمة | العمولة |
+| الفئات | العمولة |
 |---|---|
 | general, oil_change, battery, brakes, electrical, engine, transmission, suspension, body_paint, inspection, accessories, tires | **10%** |
 | wash, ac | **7%** |
 
-النسب قابلة للتعديل حياً عبر `set_commission_rate()` بصلاحية `platform.pricing` — أي أن التسعير أداة تشغيلية لا ثابت مبرمج.
+> النسب مبدئية بنصّ `PROGRESS.md`: *«14 فئة مزروعة على 10% حتى تصل نسب المؤسس الحقيقية»*. قابلة للتعديل حياً عبر `set_commission_rate` (حدود 0–50%) بصلاحية `platform.pricing`، وتظهر كشاشة «العمولات» في لوحة الإدارة. الورشة ترى صافيها في شاشة «أرباحي».
 
-**مصادر مبنيّة لكنها غير مُفعّلة بعد:**
+**مبنيّ وغير مُفعّل:** اشتراكات الورش ومحلات القطع (`subscription_plan`)، عضوية Premium للعميل، **الظهور المميّز `is_featured`** (أقوى رافعة — أعلى معيار في ترتيب المطابقة وغير مُسعّرة)، العروض الترويجية، متجر منتجات الورش، عمولة قطع الغيار.
 
-| المصدر | الدليل | الحالة |
-|---|---|---|
-| **اشتراكات الورش** | `workshops.subscription_plan` + `admin_update_subscription()` | البنية جاهزة، كل الورش `free` |
-| **اشتراكات محلات القطع** | `parts_shops.subscription_plan` (`free`/`basic`/`pro`) | البنية جاهزة، لا محلات |
-| **عضوية Premium للعميل** | `users.is_premium` + `premium_until` | البنية جاهزة، **0 مشترك** |
-| **الظهور المميّز (Featured)** | `workshops.is_featured` — أعلى معايير الترتيب في `match_workshops` | الرافعة الإعلانية الأقوى — غير مُسعّرة |
-| **العروض الترويجية** | `offers` + `views_count`/`clicks_count` | مبني، 0 صفوف |
-| **متجر منتجات الورش** | `partner_products` + `order_items.partner_product_id` | 9 منتجات فقط |
-| **عمولة قطع الغيار** | `parts_quotes.total_price` + `delivery_fee` | غير مُفعّل |
+**الفوترة:** ضريبة 15% ضمنية (`total/1.15`)، ترقيم `INV-YYYY-NNNNNN`، `issue_invoice` idempotent ومقصورة على الورشة بعد الإكمال، مع **ZATCA TLV QR**.
 
-**الفوترة:** `invoices` — ضريبة قيمة مضافة **15%** مع بيانات الورشة النظامية (CR + الرقم الضريبي). أُصدرت **0 فواتير** حتى الآن.
-
-**بيانات الشركة (مجلس داخلي — `ops_*`)** ✅: `ops_settings.investor_pct = **18%**`، بالإضافة إلى `ops_cap_table` (3 مساهمين)، `ops_tranches` (3 شرائح تمويل)، `ops_deals` (4 صفقات)، `ops_objectives` (4 أهداف)، `ops_projects`, `ops_invoices`, `ops_tools`. هذه ليست ميزات منتج — إنها **لوحة قيادة الشركة نفسها** مدمجة في المنتج.
+**لوحة الشركة (`ops_*`)** ✅: `investor_pct = 18%`، جدول ملكية (3 مساهمين)، 3 شرائح تمويل، 4 صفقات، 4 أهداف — لوحة قيادة الشركة مدمجة في المنتج.
 
 ---
 
-## 2. البنية التقنية (Tech Stack & Architecture)
+## 2. البنية التقنية
 
-### 2.1 المخطط المعماري العام
+### 2.1 المخطط المعماري
 
 ```mermaid
 graph TB
-    subgraph "الواجهات (Clients)"
-        A["تطبيق العميل<br/>FlutterFlow · iOS/Android<br/>عربي RTL أولاً"]
-        B["كونسول الورشة<br/>ويب SPA على Netlify<br/>autolive-app.netlify.app/workshop"]
-        C["لوحة الإدارة<br/>admin_* Views + RPCs"]
+    subgraph "التطبيقات — Flutter 3.x · Riverpod · go_router"
+        A["apps/client<br/>موبايل + ويب + APK"]
+        B["apps/workshop<br/>موبايل + ويب"]
+        C["apps/admin<br/>Flutter Web"]
+        D["apps/parts_shop<br/>خامل"]
     end
 
-    subgraph "Supabase — livecar-workshop (ap-south-1, PG 17)"
-        D["Auth<br/>هاتف/OTP"]
-        E["PostgREST<br/>43 جدول · 19 View · ~102 دالة"]
-        F["RLS<br/>مفعّل على كل الجداول"]
-        G["Realtime<br/>11 جدولاً"]
-        H["Storage<br/>7 Buckets"]
-        I["Vault<br/>vault_get_secret RPC"]
-        J["pg_cron · pg_net · PostGIS"]
+    subgraph "النشر"
+        N["Netlify — autolive-app.netlify.app<br/>هبوط + /client + /workshop + /admin + /apk"]
+    end
+
+    subgraph "Supabase — livecar-workshop · ap-south-1 · PG 17"
+        E["Auth — زائر/Google/إيميل"]
+        F["PostgREST · 43 جدول · 19 View · ~102 دالة"]
+        G["RLS على كل الجداول"]
+        H["Realtime — 11 جدولاً"]
+        I["Storage — 7 Buckets"]
+        J["Vault — vault_get_secret"]
+        K["PostGIS · pg_net · pg_cron"]
     end
 
     subgraph "Edge Functions (Deno)"
-        K["analyze-diagnostic v10"]
-        L["extract-document v3"]
-        M["create-payment / verify-payment"]
-        N["send-push"]
+        L["analyze-diagnostic v10"]
+        M["extract-document v3"]
+        O["create-payment · verify-payment"]
+        P["send-push — معطّلة بقرار"]
     end
 
     subgraph "خدمات خارجية"
-        O["Gemini 2.5 Flash"]
-        P["Claude Sonnet 4/4.5"]
-        Q["Moyasar"]
-        R["Firebase FCM"]
+        Q["Gemini 2.5 Flash"]
+        R["Claude Sonnet 4 / 4.5"]
+        S["Moyasar — sk_test_"]
+        T["OSM tiles — flutter_map"]
+        U["Sentry — بلا DSN"]
     end
 
-    A --> D & E & G & H
-    B --> E & G
-    C --> E
-    E --> F
-    A --> K & L & M
-    E -.pg_net + X-Push-Secret.-> N
-    K --> O & P
-    L --> P & O
-    M --> Q
-    N -.mock الآن.-> R
-    K & L & M & N --> I
+    A & B & C & D --> N
+    A & B & C --> E & F & H & I
+    A --> L & M & O
+    L --> Q & R
+    M --> R & Q
+    O --> S
+    A --> T
+    L & M & O --> J
+    F -.trigger معطّل.-> P
 ```
 
-### 2.2 الواجهات الأمامية (Frontend)
+### 2.2 الواجهات الأمامية ✅
 
-| الواجهة | التقنية | الحالة |
+**Flutter مكتوب يدوياً — وليس FlutterFlow.**
+
+```yaml
+Flutter:      3.x (Dart)
+State:        flutter_riverpod ^2.5.1
+Navigation:   go_router ^14.2.0
+Backend SDK:  supabase_flutter ^2.5.0
+HTTP:         dio ^5.4.3
+الخرائط:      flutter_map ^7.0.2 + latlong2  # OSM — بلا مفتاح مدفوع
+الموقع:       geolocator ^11.0.0
+المسح:        mobile_scanner ^5.2.3 (VIN) + image_picker (OCR)
+المراقبة:     sentry_flutter ^7.20.2  # يتفعّل فقط بوجود SENTRY_DSN
+الرموز:       flutter_svg · iconsax_flutter · qr_flutter
+```
+
+| التطبيق | الملفات | الوجهة |
 |---|---|---|
-| **تطبيق العميل** | **FlutterFlow** (Flutter/Dart) 🔶 | القواعد الملزِمة موثّقة في مهارة `flutterflow-livecar`: تسمية الصفحات `lc_<area>_<screen>`، الإجراءات `lc<Area><Action>`، الويدجت `LC<Area><Widget>`، الوصول لـ Supabase عبر `SupaFlow.client` داخل Custom Actions حصراً |
-| **كونسول الورشة** | **تطبيق ويب SPA على Netlify** ✅ | مثبت في `provision_pilot_workshops()`: رابط الدعوة `https://autolive-app.netlify.app/workshop/#/invite/<token>` — توجيه Hash Routing |
-| **لوحة الإدارة/العمليات** | واجهة ويب 🔶 | تعليق `ops_slas` يذكر دالة `getPulse` التي تقرأ عتبات الخرق — أي أن هناك "لوحة اليوم" في كود الواجهة |
+| `apps/client` | 85 Dart | موبايل + ويب + **APK منشور على `/apk`** |
+| `apps/workshop` | 73 Dart | موبايل + ويب |
+| `apps/admin` | 52 Dart | Flutter Web |
+| `apps/parts_shop` | 22 Dart | خامل |
 
-**نظام التصميم (ملزِم — من المهارة):**
+**هوية المرحلة 5 — اعتماد المؤسس 2026-07-16** ✅ (`CLAUDE.md` هو مصدر الحقيقة):
 
 | العنصر | القيمة |
 |---|---|
-| `primary` | `#1E40AF` أزرق ملكي |
-| `primaryDark` | `#0B1F4D` |
-| `accent` | `#F97316` برتقالي — **لأزرار الإجراء فقط، لا يسود أبداً** |
-| `background` / `surface` | `#FFFFFF` / `#F8FAFC` |
-| `textPrimary` / `textSecondary` | `#0F172A` / `#64748B` |
-| `success` / `warning` / `error` | `#16A34A` / `#F59E0B` / `#DC2626` |
-| خطوط عربية | `IBM Plex Arabic` أو `Cairo` (متن) — `Alexandria` أو `Tajawal` (عناوين) |
-| الأردية / الإنجليزية | `Noto Nastaliq Urdu` / `Inter` |
-| المسافات | سُلّم 4/8/12/16/24/32 |
-| **ممنوع** | بنفسجي، أخضر، نيون، cyberpunk، تدرّجات عشوائية |
+| `bluePrimary` | **`#1E40FF`** Cobalt |
+| `blueDark` / `blueMid` / `blueSoft` / `blueTint` | `#0A0F2E` / `#1733D6` / `#6B84FF` / `#EEF1FF` |
+| `orange` | **`#FF6A1A`** Energy Orange — **CTA فقط** |
+| `asphalt` (خلفية ليلية) | `#0A0D17` |
+| محايدات | `#F6F7FB` خلفية · `#E6E8EF` حدود · `#8C92A6` نص باهت |
+| نصوص | `#0E1320` / `#4A5168` |
+| حالات | `#16A34A` / `#DC2626` / `#F59E0B` |
+| **الخطوط** | **Tajawal** (عربي واجهة وعناوين) · **IBM Plex Sans** (لاتيني وأرقام جدولية) · **Noto Nastaliq Urdu** — **مضمّنة محلياً، ممنوع `google_fonts` أو أي CDN** |
+| **النهاري هو الوجه الرسمي** | الليلي ثانوي |
+| **الأرقام لاتينية بالكامل** | لا أرقام عربية-هندية |
+| عنصر العلامة الوحيد | `LcPulseLogo` بالشعار الحقيقي — **يُمنع أي نبض مرسوم يدوياً** |
+| مكتبة المكونات | `shared/widgets/lc/` — `LcPulseLogo`, `LcKpiCard`, `LcSparkline`, `LcStatusPill`, `LcRadialGauge` |
 
-**اللغة والاتجاه:** العربية أولاً ثم الأردية ثم الإنجليزية — RTL هو الافتراضي، `EdgeInsetsDirectional` إجباري، لا نصوص مكتوبة داخل الكود. القاعدة تدعم ذلك: `product_categories` ثلاثي اللغة (`name_ar`/`name_en`/`name_ur`)، و`user_preferences.language`.
+**قواعد ملزِمة:** RTL أولاً (`start/end` و`EdgeInsetsDirectional`)، `AppColors` فقط، `try/catch` على كل نداء Supabase مترجَم إلى `AppException`، Riverpod لا `setState`، **ثلاث حالات لكل شاشة** (loading/error/data)، كل النصوص عبر `AppLocalizations` بثلاث لغات (ar كامل / en كامل / ur مبدئي)، حجم نص ≥ 16px، `line-height` عربي = 1.6، **لا letter-spacing في العربية**.
 
-### 2.3 الواجهة الخلفية (Backend)
+**النشر:** موقع Netlify موحّد — `autolive-app.netlify.app` (هبوط + `/client` + `/workshop` + `/admin` + `/privacy.html` + `/terms.html` + `/apk`)، ينشر تلقائياً على كل دفعة.
 
-**Supabase كمنصّة كاملة** — لا يوجد خادم تطبيقات منفصل. المنطق يعيش في مكانين فقط: دوال Postgres (`SECURITY DEFINER`) وEdge Functions (Deno).
+> ⚠️ **درسان تقنيان مسجّلان:** (١) Flutter Web كان يجلب CanvasKit من `www.gstatic.com` فتظهر شاشة بيضاء عند حجب الـ CDN — حُلّ بـ `FLUTTER_WEB_CANVASKIT_URL=/$app/canvaskit/`. (٢) نفس درس «لا CDN» طُبِّق على الخطوط.
 
-**مشاريع Supabase (المؤسسة `cxlyxkdebgcfrnphloul`):**
+### 2.3 الواجهة الخلفية ✅
 
-| المشروع | المعرّف | المنطقة | الحالة | الدور الحقيقي |
-|---|---|---|---|---|
-| **livecar-workshop** | `xqtlicushtnmofgvikjz` | ap-south-1 (مومباي) | 🟢 نشط | **قاعدة العمل الفعلية** — كل الجداول والبيانات هنا |
-| livecar-prod | `akzwyheuqdritbngrcag` | ap-southeast-1 | ⚪ متوقّف | فارغ/غير مستخدم — **الاسم مضلِّل** |
-| livecar-dev | `xbbfwlrycjuplivqonfr` | ap-southeast-1 | ⚪ متوقّف | غير مستخدم |
-| wasla-poc | `bvyjjvwahkhjhbzckfwx` | eu-central-1 | 🟢 نشط | **مشروع منفصل** (حجوزات/تسويات) — لا علاقة له بأوتو لايف |
+Supabase كمنصّة كاملة بلا خادم وسيط. المنطق في مكانين: دوال Postgres `SECURITY DEFINER`، وEdge Functions.
 
-> ⚠️ **خطر تشغيلي:** الإنتاج يعمل على مشروع اسمه `workshop`، بينما المشروع المسمّى `prod` متوقّف وفارغ. هذا فخّ يوم يأتي مطوّر جديد أو يُطبَّق Migration على المشروع الخطأ.
+| المشروع | المعرّف | الحالة | الدور |
+|---|---|---|---|
+| **livecar-workshop** | `xqtlicushtnmofgvikjz` · ap-south-1 · PG 17.6 | 🟢 نشط | **الإنتاج الفعلي** |
+| livecar-prod | `akzwyheuqdritbngrcag` | ⚪ متوقّف | فارغ — **الاسم مضلِّل** |
+| livecar-dev | `xbbfwlrycjuplivqonfr` | ⚪ متوقّف | غير مستخدم |
+| wasla-poc | `bvyjjvwahkhjhbzckfwx` | 🟢 نشط | **مشروع منفصل** لا علاقة له |
 
-**امتدادات Postgres المفعّلة ✅:** `postgis` (المطابقة الجغرافية)، `pg_net` (نداء Edge Functions من التريغرات)، `pg_cron` (مهام مجدولة)، `supabase_vault` (الأسرار)، `pgjwt`, `pgcrypto`, `uuid-ossp`, `pg_stat_statements`.
+**الامتدادات:** `postgis`, `pg_net`, `pg_cron`, `supabase_vault`, `pgjwt`, `pgcrypto`, `uuid-ossp`, `pg_stat_statements`
 
-**Realtime مفعّل على 11 جدولاً ✅:** `vehicles`, `orders`, `reviews`, `notifications`, `parts_shops`, `parts_requests`, `parts_quotes`, `partner_products`, `service_requests`, `quotes`, `messages`.
+**Realtime (11 جدولاً):** `vehicles`, `orders`, `reviews`, `notifications`, `parts_shops`, `parts_requests`, `parts_quotes`, `partner_products`, `service_requests`, `quotes`, `messages`
 
-**Storage — 7 Buckets ✅:**
+**Storage (7 Buckets):** `vehicle-images` · `avatars` · `workshop-media` · `parts-request-images` · `branding` · `poc-public` (كلها عامة القراءة بروابط، والفهرسة مقصورة على `authenticated` بعد SEC-1) · **`temp-ocr` خاص** تُحذف محتوياته فوراً بعد الاستخراج
 
-| Bucket | عام؟ | الغرض |
-|---|---|---|
-| `vehicle-images` | نعم | صور المركبات |
-| `avatars` | نعم | صور المستخدمين |
-| `workshop-media` | نعم | شعار/غلاف/معرض الورشة |
-| `parts-request-images` | نعم | صور طلبات القطع |
-| `branding` | نعم | هوية الورشة البصرية |
-| `poc-public` | نعم | أصول إثبات المفهوم |
-| **`temp-ocr`** | **لا (خاص)** | صور الوثائق — **تُحذف فور الاستخراج** (Processing-Only) |
+**pg_cron:** مهمة واحدة فقط — `cleanup-temp-ocr` **كل دقيقة** (`* * * * *`). لا مهام أخرى مجدولة.
 
-### 2.4 مخطط قاعدة البيانات (Database Schema)
-
-**43 جدولاً في `public`، RLS مفعّل على جميعها** (باستثناء `spatial_ref_sys` التابع لـ PostGIS).
-
-#### النواة — رحلة العميل
+### 2.4 مخطط قاعدة البيانات
 
 ```mermaid
 erDiagram
     users ||--o{ vehicles : "يملك"
-    users ||--o| user_preferences : "تفضيلات"
+    users ||--o| user_preferences : ""
     users ||--o{ ai_diagnostics : "يشخّص"
-    users ||--o{ service_requests : "يطلب"
-    users ||--o{ consents : "يوافق"
-    vehicles ||--o{ vehicle_documents : "وثائق"
-    vehicles ||--o{ vehicle_status : "قراءات"
-    vehicles ||--o{ maintenance_logs : "سجل"
-    vehicles ||--o{ vehicle_shares : "مشاركة"
-    service_requests ||--o{ quotes : "عروض"
-    service_requests ||--o| orders : "يتحول إلى"
-    workshops ||--o{ quotes : "تقدّم"
+    users ||--o{ service_requests : "يبثّ"
+    vehicles ||--o{ vehicle_documents : ""
+    vehicles ||--o{ maintenance_logs : "جواز السيارة"
+    vehicles ||--o{ vehicle_shares : ""
+    service_requests ||--o{ quotes : "مزاد عكسي"
+    service_requests ||--o| orders : "قبول العرض"
+    workshops ||--o{ quotes : "تزايد"
     workshops ||--o{ orders : "تنفّذ"
-    workshops ||--o{ partner_products : "تبيع"
-    workshops ||--o{ offers : "تروّج"
-    orders ||--o{ order_items : "بنود"
-    orders ||--o| payments : "دفع"
-    orders ||--o| invoices : "فاتورة"
-    orders ||--o| reviews : "تقييم"
+    workshops ||--o{ partner_products : ""
+    workshops ||--o{ offers : ""
+    orders ||--o{ order_items : ""
+    orders ||--o| payments : "Moyasar"
+    orders ||--o| invoices : "ZATCA 15%"
+    orders ||--o| reviews : ""
     orders ||--o{ messages : "محادثة"
-    orders ||--o{ maintenance_logs : "يولّد"
+    workshops ||--o{ parts_requests : "تطلب قطعاً"
+    parts_requests ||--o{ parts_quotes : ""
+    parts_shops ||--o{ parts_quotes : ""
 ```
 
-#### الجداول الأساسية (الحقول الحاسمة فقط)
+**43 جدولاً، RLS مفعّل على جميعها.** أبرز الحقول:
 
-**`users`** — `id`, `auth_id`→`auth.users`, `full_name`, `phone`, `language` (افتراضي `ar`), `is_premium`, `premium_until`, `is_admin`, `admin_role` (`owner`\|`ops`\|`support`)
+- **`users`** — `auth_id`, `phone`, `language`, `is_premium`/`premium_until`, `is_admin`, `admin_role` (`owner`\|`ops`\|`support`)
+- **`vehicles`** — `vin`, `plate_number`, `chassis`, `current_mileage`, `oil_change_interval` (5000)، `istimara_expiry`, `data_source`, `verification_status`, `extracted_confidence`
+- **`workshops`** — `location` (PostGIS geography)، `category[]`, `status`, `is_verified`, `is_featured`, `subscription_plan`, `rating_avg`/`rating_count`, **`cr_number`+`cr_source`+`cr_verified_at`+`cr_image_url`**, `vat_number`, `brand_color`, `facade_image_url`, `interior_image_url`
+- **`ai_diagnostics`** — `conversation_history` jsonb، `phase` (`question`\|`final`)، `questions_asked` (**قيد `<= 3`**)، `flow_severity`, `severity_legacy`, `confidence`, `drive_safe`, `causes_v4`, `estimated_cost_min/max_sar`, `model_provider`
+- **`service_requests`** — `service_type`, `status` (`open`\|`accepted`\|`cancelled`\|`expired`)، `accepted_quote_id`
+- **`quotes`** — `amount_sar`, `eta_text`, `status` (`pending`\|`accepted`\|`rejected`\|`withdrawn`\|**`countered`**)، `counter_amount_sar`/`counter_note`/`countered_at` · **قيد فريد (request, workshop)**
+- **`orders`** — `order_number`, `status` (7 حالات)، `estimated_price`/`final_price`/**`platform_fee`**، `payment_status`, `payment_method` (`cash`\|`pos`\|`online`)، **`price_locked_at`**, `rejection_count`, `reassignment_of`, `cancelled_by`/`cancellation_reason`, `dispute_reason`
+- **`payments`** — `moyasar_id`, `amount`, `method`, `status`
+- **`invoices`** — `invoice_number`, لقطة هوية الورشة عند الإصدار، `vat_rate` **15.00**
+- **`user_preferences`** (28 حقلاً) — قنوات، 7 مفاتيح تنبيه، `quiet_hours` (22:00–08:00)، ورش مفضّلة/محظورة، `max_workshop_distance_km` (20)، وضوابط خصوصية (`share_vehicle_data_for_ai` …)
+- **الحوكمة** — `admin_capabilities` (11 صلاحية على 3 أدوار، **لا يكتبها أي عميل**)، `admin_audit_log` + تريغرات، `consents`, `ocr_extractions`
+- **`ops_*`** (9 جداول) — لوحة الشركة + `ops_slas` (مراجعة ورشة 48س · نزاع 24س · طلب متوقف 96س · طلب بلا ردّ 12س · سجل ناقص 72س)
 
-**`vehicles`** — `user_id`, `vin`, `plate_number`, `chassis`, `make`, `model`, `year`, `color`, `fuel_type`, `transmission`, `current_mileage`, `last_oil_change_date/mileage`, `oil_change_interval` (افتراضي 5000)، `istimara_expiry`, `owner_name`, `data_source` (`manual`\|OCR)، `verification_status` (`unverified`\|`verification_pending`\|`verified`)، `extracted_confidence`
+**19 View:** `my_active_orders`, `my_order_history`, `quotes_for_my_requests`, `vehicle_health_summary`, `diagnosis_requests`, `workshop_orders_queue`, `workshop_daily_stats`, `my_submitted_quotes`, `parts_marketplace_open`, `my_parts_quotes`, `pending_workshops_for_review`, و6 Views إدارية.
 
-**`workshops`** — `auth_id`, `name`/`name_en`, `phone`, `address`, `city` (افتراضي «الرياض»), `district`, `lat`/`lng`/**`location` (PostGIS geography)**, `category[]`, `status` (`pending`\|`active`\|`suspended`\|`inactive`), `is_verified`, `is_featured`, `partner_type`, `subscription_plan`, `rating_avg`/`rating_count`, `total_orders`, **`cr_number` + `cr_source` + `cr_verified_at` + `cr_image_url`** (السجل التجاري), `facade_image_url`, `interior_image_url`, `vat_number`, `brand_color`, `approved_at`/`approved_by`/`rejection_reason`
+**48 تريغراً** — أبرزها: `enforce_price_lock`, `trigger_orders_autolog`, `generate_order_number`, `notify_workshops_on_new_request`, `notify_client_on_new_quote`, `notify_on_order_status_change`, `update_workshop_rating`, `guard_privilege_columns`, `create_default_user_preferences`, `sync_workshop_location`, `decrement_partner_stock`, `audit_admin_change`.
 
-**`ai_diagnostics`** — `user_id`, `vehicle_id`, `workshop_id`, `conversation_history` (jsonb)، `phase` (`question`\|`final`)، `questions_asked`, `flow_severity` (`urgent`\|`soon`\|`monitor`)، `severity_legacy` (`critical`\|`medium`\|`low`)، `confidence`, `drive_safe`, `diagnosis`, `causes_v4` (jsonb)، `possible_causes[]`, `recommended_action_ar`, `estimated_cost_min/max_sar`, `urgency_message`, `requires_immediate_attention`, `model_provider`
+**فهارس:** تغطية جيدة — `idx_workshops_location_gist` (PostGIS)، `idx_workshops_category_gin`, `idx_orders_workshop_status_created`, `idx_notifications_user_unread`, `idx_service_requests_open`, `idx_vehicle_documents_renewals_needed`.
 
-**`service_requests`** — `user_id`, `vehicle_id`, `diagnosis_id`, `description`, `service_type`, `status` (`open`\|`accepted`\|`cancelled`\|`expired`)، `accepted_quote_id`, `order_id`
+### 2.5 خدمات الطرف الثالث ✅
 
-**`quotes`** — `request_id`, `workshop_id`, `amount_sar`, `eta_text`, `note`, `status` (`pending`\|`accepted`\|`rejected`\|`withdrawn`\|`countered`)، **`counter_amount_sar` + `counter_note` + `countered_at`** (التفاوض)
-
-**`orders`** — `order_number` (تسلسل)، `user_id`, `workshop_id`, `vehicle_id`, `diagnosis_id`, `status` (`pending`\|`accepted`\|`rejected`\|`in_progress`\|`completed`\|`cancelled`\|`disputed`)، `estimated_price`, `final_price`, **`platform_fee`**, `payment_status`, `payment_method` (`cash`\|`pos`\|`online`)، **`price_locked_at`**, `rejection_count`, `reassignment_of`, `cancelled_by`, `dispute_reason`, `admin_note`، وطوابع `accepted_at`/`started_at`/`completed_at`/`cancelled_at`/`rejected_at`
-
-**`payments`** — `order_id`, `user_id`, **`moyasar_id`**, `amount`, `currency` (`SAR`)، `method`, `status`
-
-**`invoices`** — `invoice_number`, `order_id`, بيانات الورشة النظامية (`workshop_vat_number`, `workshop_cr_number`)، `vat_rate` (**15.00**)، `subtotal_sar`, `vat_sar`, `total_sar`
-
-**`maintenance_logs`** — `vehicle_id`, `order_id`, `workshop_id`, `service_type`, `mileage`, `cost`, `source` (افتراضي **`autolive`**)
-
-**`user_preferences`** (28 حقلاً) — قنوات الإشعار (`push`/`email`/`sms`/`whatsapp`)، 7 مفاتيح تنبيه موضوعية، **`quiet_hours_start/end`** (22:00–08:00)، `preferred_workshop_ids[]`/`blocked_workshop_ids[]`, `workshop_priority`, `max_workshop_distance_km` (20)، `language`, `theme_mode`, `unit_system`, `currency_display`، و**ضوابط خصوصية**: `share_location`, `share_vehicle_data_for_ai`, `share_data_for_research`, `ai_diagnostic_sensitivity`
-
-**سوق قطع الغيار:** `parts_shops` (`specialties[]`, `brands_covered[]`, `delivery_areas[]`, PostGIS)، `parts_requests` (`parts` jsonb, `urgency`, **انتهاء تلقائي بعد 24 ساعة**)، `parts_quotes` (`items` jsonb, `warranty_days`, `is_original`, `delivery_fee`)
-
-**الحوكمة:** `admin_capabilities` (خريطة دور→صلاحية، **لا يكتبها أي عميل — Migration فقط، حتى لا يوسّع دورٌ نفسه**)، `admin_audit_log` + تريغرات تدقيق، `consents` (`camera_ocr`, `gps`, `notifications`, `marketing`, `data_sharing` + `policy_version` + `ip_address`)، `ocr_extractions` (سجل الاستخراج والتكلفة و`deleted_at`)
-
-**لوحة الشركة:** `ops_settings`, `ops_cash_months`, `ops_invoices`, `ops_projects`, `ops_tools`, `ops_deals`, `ops_cap_table`, `ops_tranches`, `ops_objectives`, `ops_slas`
-
-#### الـ Views (19) ✅
-
-`my_active_orders`, `my_order_history`, `quotes_for_my_requests`, `vehicle_health_summary`, `diagnosis_requests`, `workshop_orders_queue`, `workshop_daily_stats`, `my_submitted_quotes`, `parts_marketplace_open`, `my_parts_quotes`, `pending_workshops_for_review`, و6 Views إدارية (`admin_orders_list`, `admin_users_list`, `admin_workshops_list`, `admin_reviews_list`, `admin_parts_shops_list`, `admin_audit_list`).
-
-#### أبرز الدوال/RPCs (من ~102) ✅
-
-| المجال | الدوال |
-|---|---|
-| المطابقة | `match_workshops`, `workshop_covers_service`, `sync_workshop_location`, `sync_parts_shop_location` |
-| دورة الطلب | `book_order`, `accept_order`, `start_order`, `complete_order`, `cancel_order`, `schedule_order`, `enforce_price_lock` |
-| العروض والتفاوض | `accept_quote`, `reject_quote`, `withdraw_quote`, `counter_quote`, `respond_counter`, `cancel_service_request` |
-| المال | `commission_rate_for`, `set_commission_rate`, `issue_invoice`, `set_payment_preference` |
-| القطع | `create_parts_request`, `submit_parts_quote`, `accept_parts_quote`, `reject_parts_quote`, `parts_shop_dashboard_summary` |
-| الإشعارات | `notify_workshops_on_new_request`, `notify_client_on_new_quote`, `notify_on_order_status_change`, `push_on_notification`, `mark_notifications_read` |
-| المحادثة | `send_message`, `is_message_party`, `mark_messages_read` |
-| الإدارة | `admin_can`, `current_admin_role`, `admin_platform_summary`, `admin_revenue_trend`, `admin_verify_workshop`, `admin_set_workshop_status/featured`, `admin_update_subscription`, `admin_grant_admin`, `guard_privilege_columns`, `log_admin_action`, `audit_admin_change` |
-| التشغيل | `provision_pilot_workshops`, `provision_workshop_invite`, `redeem_workshop_invite`, `lc_home_feed`, `track_order_public`, `vault_get_secret` |
-| الآلي | `log_maintenance_on_completion`, `update_workshop_rating`, `generate_order_number`, `decrement_partner_stock`, `create_default_user_preferences` |
-
-### 2.5 خدمات الطرف الثالث والتكاملات ✅
-
-| الخدمة | المزوّد | الاستخدام الدقيق | الحالة |
+| الخدمة | المزوّد | التفاصيل | الحالة |
 |---|---|---|---|
-| **الذكاء الاصطناعي — التشخيص** | **Google Gemini 2.5 Flash** (افتراضي) + **Claude Sonnet 4.5** (بديل بنداء `provider`) | `analyze-diagnostic` — `temperature: 0.3`، `responseSchema` مُلزِم لدى Gemini، وتخزين مؤقت للـ system prompt لدى Claude | 🟢 يعمل — 48 من 50 جلسة عبر Gemini |
-| **الذكاء الاصطناعي — الرؤية/OCR** | **Claude Sonnet 4** `claude-sonnet-4-20250514` (افتراضي) مع **Gemini 2.5 Flash** كاحتياطي | `extract-document` — استخراج VIN / استمارة / سجل تجاري / رخصة قيادة | 🟢 يعمل — 9 عمليات |
-| **الدفع** | **Moyasar** — `https://api.moyasar.com/v1/invoices` | فاتورة مستضافة (Hosted Checkout) بالهللات، `callback_url` → `verify-payment` | 🟡 يعمل تقنياً — دفعتان فقط بقيمة 145 ر.س |
-| **الإشعارات** | **Firebase Cloud Messaging (HTTP v1)** مع OAuth2 RS256 لحساب الخدمة | `send-push` يُستدعى من تريغر `push_on_notification` عبر `pg_net` بسر مشترك `X-Push-Secret` | 🔴 **وضع Mock** — لا يوجد `FCM_SERVICE_ACCOUNT` في Vault، و`push_tokens` فارغ |
-| **الخرائط/الموقع** | **PostGIS داخلياً** (`ST_DWithin` / `ST_Distance` / `geography`) | لا مفتاح خرائط خارجي في القاعدة | 🔶 عرض الخرائط في الواجهة يستخدم مزوّد FlutterFlow — غير مؤكَّد |
-| **الاستضافة** | **Netlify** — `autolive-app.netlify.app` | كونسول الورشة | 🟢 يعمل |
-| **إدارة الأسرار** | **Supabase Vault** عبر RPC `vault_get_secret` (`SECURITY DEFINER`، مقصورة على `service_role`) | `GEMINI_API_KEY`, `CLAUDE_API_KEY`, `MOYASAR_SECRET_KEY`, `PUSH_HOOK_SECRET`, `FCM_SERVICE_ACCOUNT` | 🟢 يعمل |
-| **رسائل SMS / واتساب** | ❓ لا يوجد | `user_preferences` يعِد بـ `sms_enabled` و`whatsapp_enabled` | 🔴 **فجوة**: وعد في الواجهة بلا مزوّد خلفه |
-| **أدوات الفحص / OBD** | ❓ لا يوجد | `vehicle_status` (وقود، بطارية، صحة محرك، ضغط إطارات، حرارة) بمصدر افتراضي `manual` | 🔴 **لا تكامل تليماتيكس** — الجدول جاهز والمصدر يدوي |
-| **ZATCA / فاتورة** | ❓ لا يوجد | `invoices` يحسب 15% لكن بلا ربط بمنصّة فاتورة | 🔴 فجوة امتثال |
+| **تشخيص AI** | **Gemini 2.5 Flash** (افتراضي) + **Claude Sonnet 4.5** | `temperature 0.3` · `maxOutputTokens 4096` (قيد ملزم) · `responseSchema` لدى Gemini · **prompt caching** لدى Claude يخفض دورات الاستجواب ~90% | 🟢 48 من 50 جلسة عبر Gemini |
+| **رؤية/OCR** | **Claude Sonnet 4** (افتراضي) + **Gemini 2.5 Flash** احتياطي | VIN · استمارة · سجل تجاري · رخصة قيادة — مع تقدير تكلفة بالريال لكل عملية | 🟢 9 عمليات |
+| **الدفع** | **Moyasar** — فاتورة مستضافة | صفر PCI scope · دورة 3DS كاملة مُختبرة حياً | 🟡 **`sk_test_`** — الإطلاق يحتاج `sk_live_` فقط |
+| **الإشعارات** | **Supabase Realtime** | ⚠️ **قرار المؤسس 2026-07-29: لا Firebase** — `notifications` + Realtime هي القناة الرسمية | 🟢 يعمل |
+| ~~FCM~~ | Firebase | البنية كاملة و`trg_notifications_push` **معطّل (`tgenabled='D'`)** — خامل وغير ضار | ⚪ مؤجَّل بقرار |
+| **الخرائط** | **OpenStreetMap عبر `flutter_map`** | بلا مفتاح مدفوع، يعمل على الويب/أندرويد/iOS | 🟢 يعمل |
+| **الاستضافة** | **Netlify** (Pro) | نشر تلقائي + بناء APK في نفس المسار | 🟢 يعمل |
+| **الأسرار** | **Supabase Vault** عبر `vault_get_secret` | `GEMINI_API_KEY` · `CLAUDE_API_KEY` · `MOYASAR_SECRET_KEY` · `PUSH_HOOK_SECRET` | 🟢 يعمل |
+| **مراقبة الأعطال** | **Sentry** — بلا PII إطلاقاً | `sendDefaultPii=false` + `redactPii` يمسح أنماط الجوال السعودي و VIN من الرسائل والآثار، مع اختبارات وحدة | 🟡 ينقص `SENTRY_DSN` |
+| SMS OTP | ❓ Unifonic — مخطط في المرحلة C | `sms_enabled` في التفضيلات بلا مزوّد | 🔴 فجوة |
+| OBD/تليماتيكس | ❓ | `vehicle_status` جاهز بمصدر `manual` | 🔴 لا تكامل |
+| تكاملات حكومية | ❓ أبشر/نجم/تقدير/ناجز | مذكورة في الرؤية، خارج نطاق الإصدار الحالي | 🔴 مؤجَّلة |
 
 ---
 
-## 3. حالة الميزات والوظائف (Feature Status)
+## 3. حالة الميزات
 
-### 3.1 مكتمل ويعمل ببيانات حقيقية ✅
+### 3.1 المسار الذهبي — 11 خطوة ✅
 
-| الميزة | الدليل الرقمي |
-|---|---|
-| **محرّك التشخيص الذكي (v4.3)** — استجواب متعدد الدورات، 3 أسئلة كحد أقصى، خيارات إجابة بلغة صاحب السيارة، إنهاء إجباري عند ثقة ≥ 0.75 | **50 جلسة**: 30 وصلت `final` (21 `urgent`، 9 `soon`) |
-| **تجاوز السلامة الإجباري** — 22 كلمة مفتاحية عربية (فرامل/بريك/مكابح، مقود/دركسون، حرارة/كولنت، تسريب وقود، إيرباق) تفرض `urgent` + `drive_safe=false` وتُنهي الاستجواب فوراً | مطبَّق في `enforceSafety()` — يتجاوز مخرجات النموذج |
-| **مطابقة الورش الجغرافية** | `match_workshops` بـ PostGIS، ترتيب: مميّزة ← موثّقة ← الأقرب ← الأعلى تقييماً |
-| **دورة الطلب الكاملة** | 18 طلباً عبر كل الحالات: 3 معلّق، 5 مقبول، 2 قيد التنفيذ، 6 مكتمل، 2 متنازع عليه |
-| **سوق العروض والتفاوض** | 22 طلب خدمة، 11 عرضاً (7 مقبول، 1 مقابل، 3 معلّق) |
-| **قفل السعر بعد القبول** | `price_locked_at` + تريغر `enforce_price_lock` |
-| **العمولة الديناميكية** | `commission_rates` بـ 14 نوع خدمة |
-| **الدفع الإلكتروني** | Moyasar — 10 عمليات (2 مدفوعة) |
-| **سجل الصيانة التلقائي** | يُكتب داخل `complete_order()` بلا تدخّل بشري |
-| **الإشعارات داخل التطبيق** | **66 إشعاراً** مولَّداً من التريغرات |
-| **المحادثة عميل↔ورشة** | `messages` + `is_message_party` + Realtime |
-| **OCR للوثائق** | 9 عمليات استخراج مسجّلة |
-| **استقبال الورش وتوثيقها** | 18 ورشة، تدفّق `pending`→`active` مع سجل تجاري وصور واجهة/داخل |
-| **دعوات الورش (Pilot)** | 3 دعوات صادرة، صلاحية 14 يوماً |
-| **صلاحيات الإدارة والتدقيق** | 11 صلاحية على 3 أدوار، **19 حدثاً في سجل التدقيق** |
-| **تفضيلات المستخدم** | **27 صفاً** تُنشأ تلقائياً بـ `create_default_user_preferences` |
-| **الشاشة الرئيسية الموحّدة** | `lc_home_feed` — مؤشر صحة السيارة + الطلب النشط + الورش القريبة في نداء واحد |
-| **لوحة الشركة (ops)** | 9 جداول ممتلئة ببيانات فعلية |
+بحسب `GAP_REPORT.md` (تدقيق LC-000) والتحديثات اللاحقة في `PROGRESS.md`:
 
-### 3.2 مبني بالكامل لكنه غير مُفعّل ⚠️ (كود بلا استخدام)
-
-| الميزة | الجدول | الصفوف | ما ينقصه |
+| # | الخطوة | الحالة | الدليل |
 |---|---|---|---|
-| **سوق قطع الغيار** | `parts_shops` / `parts_requests` / `parts_quotes` | 0 / 0 / 0 | لا محلات مسجّلة — قرار: نُفعّل أم نؤجّل؟ |
-| **التقييمات** | `reviews` | **0** | تريغر التقييم جاهز، لكن لا واجهة تُغلق الحلقة بعد الإنجاز |
-| **الفواتير الضريبية** | `invoices` | 0 | `issue_invoice()` جاهزة — لم تُستدعَ قط |
-| **العروض الترويجية** | `offers` | 0 | لا واجهة إنشاء للورشة |
-| **وثائق المركبة والتذكيرات** | `vehicle_documents` | 0 | التذكيرات (30/7/1 يوم) بلا مهمة `pg_cron` مربوطة |
-| **قراءات السيارة الحية** | `vehicle_status` | 0 | لا مصدر بيانات (لا OBD ولا إدخال يدوي في الواجهة) |
-| **مشاركة المركبة** | `vehicle_shares` | 0 | لا واجهة دعوة |
-| **الموافقات (Consents)** | `consents` | **0** | ⚠️ **خطر امتثال**: نستخدم الكاميرا والموقع وبيانات المركبة للذكاء الاصطناعي بلا موافقة مسجّلة |
-| **الإشعارات الفورية (Push)** | `push_tokens` | 0 | ينقص `FCM_SERVICE_ACCOUNT` + تسجيل التوكن في التطبيقات |
-| **خدمات الورشة المسعّرة** | `services` | 0 | حلّ محلّها `partner_products` (9 صفوف) — تكرار معماري |
-| **عضوية Premium** | `users.is_premium` | 0 | لا باقات ولا واجهة اشتراك |
+| 1 | دخول بلا احتكاك | ✅ | `auth_screen.dart` — زائر بضغطة + Google OAuth + إيميل · توفير صف العميل تلقائياً |
+| 2 | إضافة سيارة | ✅ | يدوي/تصوير · SmartCapture سيرفري · **حذف الصورة بعد القراءة (PDPL)** · `VinValidator` بخوارزمية SAE J287 |
+| 3 | تشخيص AI | ✅ | `analyze-diagnostic` v10 · حوار متعدد الجولات بخيارات · نصوص تحليل متبدّلة · شريط ثقة + نطاق تكلفة |
+| 4 | البثّ للورش | ✅ | `service_requests` + Realtime · **بثّ لكل الورش المغطّية للخدمة — قرار مقصود** |
+| 5 | **المزاد العكسي** | ✅ | `auction_room_screen` (عميل) + `open_requests_screen` (ورشة) · عروض حيّة · مسافة «X كم» على البطاقة |
+| 6 | قبول ذرّي | ✅ | `accept_quote()` بقفول صفّية — **مُثبت بمحاولة قبول مزدوجة فاشلة**: فائز واحد، رفض تلقائي للبقية |
+| 7 | الطلب والتنفيذ | ✅ | جدولة/بدء/إلغاء/إكمال · رسائل عربية دقيقة لكل محاولة غير قانونية |
+| 8 | التتبّع الحي | ✅ | Realtime على `orders` · دمج `status` + `payment_status` |
+| 9 | الدفع | 🟡 | دورة 3DS كاملة مُختبرة حياً على طلب `LC-2026-86761` (25 ﷼) — ينقص `sk_live_` |
+| 10 | سجل الخدمة | ✅ | `trigger_orders_autolog` + جواز السيارة + مؤشر إجمالي الإنفاق |
+| 11 | التقييم | ✅ | `rate_order_screen` + إعادة حساب متوسط الورشة (يغطي DELETE أيضاً) |
 
-### 3.3 مسار تجربة المستخدم (User Flow)
+**الخلاصة:** 10 من 11 خطوة تعمل ومُختبرة · خطوة واحدة محجوبة على مفتاح مؤسس · **صفر مفقود في صلب المسار**.
 
-#### رحلة العميل ✅
+### 3.2 تجربة الورشة الاحترافية (المرحلة 5 — مُغلقة) ✅
+
+| الميزة | التفاصيل |
+|---|---|
+| **لوحة `lc_workshop_dashboard`** | 4 بطاقات KPI حيّة: طلبات اليوم + شرارة 7 أيام · صافي إيراد الأسبوع بعد العمولة · التقييم + العدد · **متوسط زمن الاستجابة** (من البثّ إلى العرض) |
+| **كانبان `/operations`** | 4 أعمدة (جديد بـ QuoteSheet داخل البطاقة · بانتظار العميل · قيد التنفيذ · مكتمل) + درج أرشيف للملغى/المتنازع |
+| **كونسول التشخيص `/console`** | تدفّق تقارير بحواف ملوّنة بالخطورة · مقاييس ثقة · أعطال مصنّفة · **قطع مقترحة من مخزون الورشة نفسها** حسب تخطيط نوع الخدمة → فئة · عرض بضغطة واحدة |
+| **التفاوض** | قبول / **فاوض على السعر** / رفض — دورة كاملة 500 ← مقابل 400 ← ردّ 450 ← رفض نهائي، مُختبرة 9/9 |
+| **المحادثة** | خيط لكل طلب أو مفاوضة · Realtime · RLS للأطراف فقط |
+| **الفواتير** | ZATCA TLV QR · `INV-YYYY-NNNNNN` · idempotent |
+| **الهوية البصرية** | `brand_color` من **لوحة 8 ألوان مُنسَّقة يتحقّق منها السيرفر** · رفع شعار مقصور على مجلّد الورشة |
+| **أرباحي / تقييمات** | صافي/إجمالي/عمولة لكل طلب · قائمة تقييمات حيّة |
+| **الإعدادات** | لغة · وضع ليلي · الشاشة الافتراضية (كلاسيك/كانبان/كونسول) |
+
+### 3.3 مبني وغير مُفعّل ⚠️
+
+| الميزة | الصفوف | السبب |
+|---|---|---|
+| سوق قطع الغيار (`apps/parts_shop` + 3 جداول) | 0 | لا محلات مسجّلة — قرار: نُفعّل أم نجمّد؟ |
+| التقييمات | **0** | الشاشة والتريغر يعملان — **فجوة استخدام لا فجوة بناء** (بذرة العرض 4.8/124 على الورشة التجريبية) |
+| الفواتير | 0 | `issue_invoice` جاهزة، لم تُستدعَ في طلب حقيقي |
+| العروض الترويجية | 0 | لا واجهة إنشاء للورشة |
+| وثائق المركبة | 0 | التذكيرات (30/7/1 يوم) **بلا مهمة `pg_cron`** |
+| قراءات السيارة الحية | 0 | لا مصدر بيانات |
+| مشاركة المركبة | 0 | لا واجهة دعوة |
+| **الموافقات** | **0** | ⚠️ خطر امتثال — كاميرا وموقع وبيانات مركبة بلا موافقة مسجّلة |
+| Premium | 0 | لا باقات |
+| `services` | 0 | حلّ محلّها `partner_products` — ازدواج |
+
+### 3.4 مسار تجربة المستخدم
 
 ```mermaid
 sequenceDiagram
     participant C as العميل
-    participant App as التطبيق
+    participant App as apps/client
     participant AI as analyze-diagnostic
     participant DB as Supabase
-    participant W as الورشة
+    participant W as الورش
 
-    C->>App: تسجيل بالهاتف (OTP)
-    App->>DB: users + user_preferences (تلقائي)
-    C->>App: إضافة سيارة — تصوير الاستمارة
-    App->>DB: رفع إلى temp-ocr (خاص)
-    DB->>App: extract-document → لوحة/موديل/سنة/هيكل + ثقة
-    Note over DB: حذف الصورة فوراً (Processing-Only)
-    C->>App: «سيارتي تصدر صوتاً عند الفرملة»
+    C->>App: دخول بضغطة (زائر/Google)
+    App->>DB: users + user_preferences تلقائياً
+    C->>App: تصوير الاستمارة
+    App->>DB: temp-ocr (خاص)
+    DB->>App: extract-document → لوحة/موديل/سنة + ثقة
+    Note over DB: حذف الصورة فوراً — PDPL
+    C->>App: «صوت عند الفرملة»
     App->>AI: symptoms_text
-    AI-->>App: سؤال 1 + خيارات بلغة صاحب السيارة
+    AI-->>App: سؤال واحد بخيارات بلغة صاحب السيارة
     C->>App: إجابة
-    AI-->>App: phase=final · urgent · drive_safe=false · نطاق سعر
-    Note over AI: مسح السلامة كشف «الفرملة» → تجاوز إجباري
-    C->>App: نشر طلب خدمة
+    AI-->>App: final · urgent · drive_safe=false · نطاق سعر
+    Note over AI: مسح السلامة كشف «الفرملة» → تجاوز حتمي
+    C->>App: بثّ الطلب
     App->>DB: service_requests (open)
-    DB->>W: إشعار لكل ورشة نشطة تغطي الخدمة
-    W-->>DB: عرض سعر (quotes)
-    DB->>C: إشعار «وصلك عرض»
-    C->>App: قبول العرض / تسعير مقابل
-    App->>DB: accept_quote → order (accepted) + قفل السعر
-    W->>DB: start_order → in_progress
-    W->>DB: complete_order(سعر نهائي, طريقة دفع)
-    Note over DB: عمولة + سجل صيانة تلقائي + إشعار تقييم
-    C->>App: دفع إلكتروني (Moyasar) أو كاش/شبكة
-    C->>App: تقييم ← ⚠️ الحلقة غير مُغلقة اليوم (0 تقييم)
+    DB->>W: إشعار لكل ورشة تغطي نوع الخدمة
+    W-->>DB: عروض متعددة (مزاد عكسي)
+    DB->>C: Realtime — العروض تظهر حيّة + اهتزاز خفيف
+    C->>App: قبول / مفاوضة / رفض
+    App->>DB: accept_quote() ذرّي → فائز واحد + رفض البقية
+    W->>DB: start_order → complete_order(سعر + طريقة دفع)
+    Note over DB: عمولة + سجل صيانة + إشعار تقييم
+    C->>App: دفع إلكتروني أو كاش/شبكة
+    C->>App: تقييم → إعادة حساب متوسط الورشة
 ```
 
-#### رحلة الورشة ✅
-
-```
-دعوة برابط (14 يوماً) → redeem_workshop_invite → ربط auth_id
-    ↓
-استكمال الملف: سجل تجاري + رقم ضريبي + صور واجهة/داخل + فئات خدمة
-    ↓
-مراجعة إدارية: pending_workshops_for_review → admin_verify_workshop (SLA 48 ساعة)
-    ↓
-active → تُبثّ لها الطلبات المطابقة لفئاتها
-    ↓
-كونسول الورشة: workshop_orders_queue · workshop_daily_stats
-    ↓
-تقديم عرض → تفاوض (counter/respond) → قبول
-    ↓
-start_order → complete_order(سعر + طريقة دفع) → خصم العمولة تلقائياً
-    ↓
-أدوات إضافية: منتجات (partner_products) · هوية بصرية (brand_color/logo) · محادثة
-```
-
-#### رحلة الإدارة ✅
-`admin_platform_summary` + `admin_revenue_trend` → لوحة اليوم بعتبات `ops_slas` (مراجعة ورشة 48س، نزاع 24س، طلب متوقف 96س، طلب بلا رد 12س، سجل ناقص 72س) → إجراءات محروسة بـ `admin_can()` → كل إجراء يُسجَّل في `admin_audit_log`.
+**رحلة الورشة:** دعوة برابط (14 يوماً) ← استرداد ذرّي يربط `auth_id` ← استكمال السجل التجاري والصور ← مراجعة إدارية (SLA 48س) ← `active` ← بثّ الطلبات ← لوحة/كانبان/كونسول ← عرض ← تفاوض ← تنفيذ ← إقفال بسعر وطريقة دفع ← عمولة تلقائية.
 
 ---
 
-## 4. القرارات التقنية والمعمارية السابقة
+## 4. القرارات التقنية والمعمارية
 
-### 4.1 الخط الزمني — 74 Migration في 102 يوماً ✅
+### 4.1 القرارات الموثّقة في `DECISIONS.md` ✅
 
-| الحقبة | التاريخ | القرار |
+| الرمز | القرار | السبب |
 |---|---|---|
-| **التأسيس** | 2026-05-06 | `initial_schema` — إطلاق قاعدة `livecar-workshop` |
-| **التوحيد** | 2026-05-18 | `livecar_canonical_schema` — إعادة بناء المخطط، ثم **4 هجرات متتالية لتشديد RLS** في اليوم نفسه (`rls_hardening`, `rls_helper_functions_no_recursion`, `restrict_rls_helper_execute`) |
-| **السوق والمطابقة** | 2026-05-19 | قطع الغيار، `workshop_matching_and_indexes`، `location_sync_and_realtime`، **بذر ورش جدة**، `core_app_rpcs`، `flutterflow_views`، Buckets |
-| **شاشات العميل** | 2026-05-20 | `vehicle_status_realtime`, `offers_and_promotions`, `vehicle_documents_and_renewals`, `user_preferences_and_settings`, `harden_new_function_search_paths` |
-| **الإدارة** | 2026-05-29 | دور المسؤول وسياساته، سجل التدقيق، RPCs ولوحات الإدارة، وإصلاح خلل تسعير القطع |
-| **الفجوات الحرجة** | 2026-06-11/12 | `council_critical_gaps_v1`، ثم `phase2_quotes_vehicle_shares_diagnosis_requests`، و`v4_ai_diagnostics_extension` (نقلة محرّك التشخيص إلى v4) |
-| **الالتقاط الذكي** | 2026-06-25 | `smart_capture` + `poc_assets_table` |
-| **الأمان** | 2026-07-02 | **`vault_get_secret_rpc`** — نقطة تحوّل في إدارة الأسرار |
-| **سلسلة LC-4xx** | 2026-07-13/14 | فلترة البثّ بنوع الخدمة، دعوات الورش، **دورة الحجز**، إقفال الخدمة، **جدول العمولات**، التقييمات الفورية |
-| **سلسلة LC-5xx** | 2026-07-22 | قراءة التشخيص في الكونسول، **تفاوض العروض**، المحادثة، الفواتير، هوية الورشة البصرية |
-| **إعادة التسمية** | **2026-07-27** | **`al01_security_hardening_and_rebrand`** — Live Car ← **Auto Live**، مدمجة مع تشديد أمني |
-| **سلسلة AL/LC-Bx/Cx** | 2026-07-28 → 08-11 | تفضيل الدفع، تشديد صلاحيات Views، تسجيل تلقائي، **الشاشة الرئيسية**، لوحة الشركة، **Push**، تريغرات التدقيق، حارس الامتيازات، **تجهيز ورش الطيار** |
-| **الأحدث** | **2026-08-16** | `resolution_note_and_slas` — عتبات خرق طابور العمليات |
+| **D-001** | `ai_diagnostics` يبقى الجدول الأم و`diagnosis_requests` **VIEW** فوقه | مفتاح أجنبي حي + كل السياسات معلّقة بالاسم القديم — VIEW يحقق التوافق **بصفر مخاطر هجرة** |
+| **D-002** | `severity` بخريطة مزدوجة (`flow_severity` + `severity_legacy` + `severity`) | عدم كسر مستهلكي v3 · الخريطة: urgent→critical، soon→medium، monitor→low |
+| **D-003** | A/B بين Gemini وClaude بنفس الـ prompt وعقد JSON واحد | Gemini افتراضي للكلفة · Claude يستفيد من prompt caching |
+| **D-004** | `maxOutputTokens = 4096` **لا يُمَس** | العربية تحتاج tokens أكثر — 1024 كان يقصّ الردّ · **انتهاكه يحتاج إذناً صريحاً** |
+| **D-005** | **السلامة تُفرض مرتين — قبل وبعد النموذج** | «الفرامل/المقود/الحرارة/الإيرباغ/تسريب الوقود = أرواح. الحارس الحتمي على السيرفر، لا في الـ APK» |
+| **D-006** | 3 أسئلة **سقف صلب** بقيد `CHECK` في القاعدة | «كل سؤال إضافي = عميل يخرج» — حاجز ضد انحراف النموذج |
+| **D-007** | جداول المرحلة 2 الموجودة **لا تُلمس** | مخططاتها الحيّة أغنى مما طلب الـ brief |
+| **D-008** | RLS لكل جدول جديد عبر الـ helpers الموجودة | تجنّب التكرار اللانهائي في السياسات |
 
-### 4.2 أبرز القرارات ولماذا
+### 4.2 قرارات إضافية مستخرجة من `PROGRESS.md` و`ROADMAP.md` ✅
 
-**1. Supabase كمنصّة كاملة بلا خادم وسيط**
-> *لماذا:* فريق صغير + حاجة إلى Realtime وAuth وStorage من اليوم الأول. المنطق الحسّاس في دوال `SECURITY DEFINER` بدل طبقة API — أسرع وأقل سطح هجوم، لكنه يربط المشروع بـ Postgres بقوة.
+**١. Supabase كمنصّة كاملة** — لا خادم وسيط. المنطق في دوال `SECURITY DEFINER`، وأسرع سطح هجوم أصغر.
 
-**2. RLS على كل جدول — قاعدة غير قابلة للتفاوض**
-> *لماذا:* العميل يتصل بالقاعدة مباشرة، فالسياسة هي الجدار الوحيد. القرار الأدق: **دوال مساعدة بلا تكرار (`no_recursion`) مع `EXECUTE` مقيّد** — لأن سياسة تستدعي جدولاً عليه سياسة تُنتج حلقة لا نهائية.
+**٢. لا بيئة محلية — التحقق حيّ عبر محاكاة JWT.** بروتوكول الحلقة ينصّ: *«لا Docker هنا — التحقق عبر MCP على القاعدة الحية، بمحاكاة JWT»*. ومعه **درس مسجّل**: فحوص RLS يجب أن تجري تحت دور `authenticated` — لأن دور المالك يتجاوز RLS **ويعطي نجاحاً زائفاً**.
 
-**3. `admin_capabilities` لا يكتبها أي عميل**
-> *لماذا:* التعليق في القاعدة صريح: *«writable by no client — migration only, so a role cannot widen itself»*. مع `guard_privilege_columns` كتريغر يمنع رفع الامتيازات عبر تحديث عادي على `users`. هذا نضج أمني أعلى من المتوسط.
+**٣. البثّ للجميع بلا فلترة جغرافية — قرار مقصود.** نصّ الروادماب: *«بثّ للجميع (قرار: لا فلترة جغرافية — **كثافة العروض أوكسجين التجربة**)»*. الفلترة الجغرافية مجدولة صراحةً **عند تجاوز 20 ورشة نشطة**.
 
-**4. الأسرار في Vault عبر RPC — لا `env` ولا مفاتيح في التطبيق**
-> *لماذا:* تعليق الكود يوثّق العطل الحقيقي: مخطط `vault` غير مكشوف لـ PostgREST، فكانت القراءة المباشرة **تفشل بصمت وتسقط على مفتاح قديم محظور في `env`**. الحل: RPC `SECURITY DEFINER` مقصورة على `service_role`، **وإلغاء السقوط على `env` تماماً** حتى لا يختبئ العطل. مع تخزين مؤقت 5 دقائق لتفادي نداء القاعدة في كل طلب.
+**٤. الدخول بلا احتكاك.** زائر بضغطة + Google OAuth — وهذا سبب تفعيل التسجيل المجهول (وليس سهواً).
 
-**5. Moyasar بفاتورة مستضافة**
-> *لماذا:* التعليق صريح — **«صفر PCI scope»**. لا تلمس بطاقة العميل أي طبقة من طبقاتنا. المفتاح السري لا يُشحن في التطبيق، والتحقق سيرفري عبر `verify-payment` ثم يقلب الحالة في القاعدة و**Realtime يوصل التحديث للشاشة فوراً**.
+**٥. لا Firebase — Supabase فقط (2026-07-29).** قرار مؤسس. القناة الرسمية `notifications` + Realtime. بنية FCM كاملة ومعطّلة، يمكن إحياؤها بتغيير صفر كود.
 
-**6. مزوّدا ذكاء اصطناعي لا واحد**
-> *لماذا:* Gemini 2.5 Flash افتراضياً (تكلفة أدنى بكثير: ~0.075$/م.توكن مقابل 3$ لـ Sonnet) مع Claude كبديل بنداء واحد. وفي الرؤية انعكس الترتيب: **Claude افتراضي والـ Gemini احتياطي** — لأن دقّة قراءة الاستمارة العربية تستحق التكلفة. الدالة تحسب تكلفة كل عملية بالريال وتخزّنها في `ocr_extractions.cost_credits`.
+**٦. لا CDN لأي أصل.** الخطوط مضمّنة، وCanvasKit من نسخة البناء — بعد أن سبّب `gstatic` شاشة بيضاء على جهاز المؤسس.
 
-**7. السلامة تتجاوز النموذج — لا تعتمد عليه**
-> *لماذا:* القرار الأهم في المنتج كله. `enforceSafety()` تفحص نصّ المحادثة بـ 22 كلمة مفتاحية عربية، وإن ذُكر نظام سلامة **فرضت** `urgent` + `drive_safe=false` + إنهاء الاستجواب — **حتى لو قال النموذج غير ذلك**. هذا يقرّ ضمناً بأن النموذج قد يخطئ، ويضع حاجزاً حتمياً حول أخطر مسار في المنتج.
+**٧. Moyasar بفاتورة مستضافة** — صفر PCI scope، والمفتاح السري لا يغادر القاعدة إطلاقاً (رؤوس التفويض تُبنى داخل SQL من `vault.decrypted_secrets`).
 
-**8. بروتوكول استجواب مقيّد بثلاثة أسئلة**
-> *لماذا:* المفاضلة بين الدقّة وتسرّب المستخدم. الحل: أولوية محاور صارمة (مسح سلامة ← لمبات الطبلون ← الاقتران ← التوقيت ← السوائل ← آخر صيانة) وإنهاء إجباري عند ثقة ≥ 0.75. وقاعدة صياغة: `question_options` **بلغة صاحب السيارة لا بلغة فني** — «أول تشغيل والمكينة باردة» بدل «قبل بلوغ درجة التشغيل».
+**٨. الأسرار في Vault عبر RPC — بلا سقوط على `env`.** العطل الموثّق: مخطط `vault` غير مكشوف لـ PostgREST فكانت القراءة تفشل **بصمت** وتسقط على مفتاح قديم محظور. أُلغي السقوط تماماً حتى لا يختبئ العطل.
 
-**9. معايرة النموذج للسياق السعودي**
-> *لماذا:* موثّق حرفياً في الـ prompt — حرارة فوق 50° وغبار ⇒ **تقصير أعمار القطع والسوائل 30–40%**، والأسعار بالريال وفق سوق ورش **جدة 2026** بنطاق واقعي لا متفائل.
+**٩. Processing-Only لصور الوثائق** — Bucket خاص، مسار مقيّد بمجلّد المستخدم، حذف في `finally`، وختم `deleted_at`، ومهمة تنظيف كل دقيقة.
 
-**10. إزالة الشخصية المسمّاة (v4.3)**
-> *لماذا:* «قرار المؤسس» كما هو مكتوب في رأس الملف. المساعد بلا اسم ولا تقمّص — أداة منصّة لا شخصية. قرار يقلّل الالتزام القانوني ويرفع الجدّية.
+**١٠. Sentry بلا PII إطلاقاً** — الأنماط السعودية (`05…` / `+9665…`) و VIN تُمسح قبل الإرسال، والشرط مُشفَّر كاختبارات وحدة تعمل في CI.
 
-**11. Push من القاعدة لا من التطبيق**
-> *لماذا:* **جدول `notifications` هو مصدر الحقيقة**، وقناة FCM مجرد تسليم. التريغر ينادي Edge Function عبر `pg_net` بسرّ مشترك (`verify_jwt=false` **عمداً** لأن النداء من القاعدة). ووضع Mock يبني الحمولات كاملة ويعيدها للفحص الآلي — **فتُختبر البنية بالكامل قبل توفّر اعتماد Firebase**، ويتحوّل للتسليم الفعلي **بلا أي تغيير كود**.
+**١١. بوابة أسرار في CI** — تفشل البناء فور ظهور `service_role` أو `sb_secret` في `apps/` أو `.github/`.
 
-**12. Processing-Only لصور الوثائق**
-> *لماذا:* أقل البيانات احتفاظاً. الصورة تُرفع إلى Bucket **خاص** بمسار مقيّد بمجلّد المستخدم (`storage_path.startsWith(userId + '/')` — يُتحقق منه في الدالة)، وتُحذف في `finally` مهما كانت النتيجة، مع ختم `deleted_at`.
+**١٢. الهوية موحّدة عبر `AppColors`/`AppNeu`** — تغيير الرمز يقلب كل شاشة قديمة فوراً.
 
-**13. PostGIS منذ اليوم الأول**
-> *لماذا:* `location geography` مع `ST_DWithin` تستخدم الفهرس المكاني — بينما الحساب في الذاكرة ينهار مع نموّ عدد الورش. ملاحظة المهارة صريحة: التصفية على مسافة في العميل «للنماذج الأولية فقط».
+**١٣. مواصفة ملزِمة للشاشة الرئيسية** — `docs/design/lc_home_main.spec.md` مع بوابة آلية `tools/check_home_spec.sh` (9/9) تعمل في CI قبل أي commit.
 
-### 4.3 التحديات التقنية والديون القائمة ⚠️
+### 4.3 التحديات التي واجهت المشروع فعلياً ✅
 
-| # | التحدي | الدليل | الأثر | الحل المقترح |
-|---|---|---|---|---|
-| **1** | **`complete_order` مكرّرة بتوقيعَين** | نسخة `(uuid, numeric, int)` **تثبّت 8%** بتعليق «configurable later»، ونسخة `(uuid, numeric, text)` تستخدم `commission_rate_for()` | **خطر مالي مباشر:** استدعاء التوقيع القديم يحتسب عمولة خاطئة | حذف التوقيع القديم بعد التأكد من عدم استخدامه في الواجهات |
-| **2** | **حسابان مختلفان للمسافة** | `match_workshops` بـ PostGIS، بينما `lc_home_feed` تحسب Haversine يدوياً بـ `acos()` | نتائج متضاربة + مسح كامل للجدول في الشاشة الرئيسية | توحيدها على PostGIS |
-| **3** | **بثّ الطلب لكل ورشة نشطة** | `notify_workshops_on_new_request` تُدرج إشعاراً لكل ورشة تغطي الخدمة — **بلا حدّ مسافة** | مقبول عند 4 ورش، كارثي عند 400: إزعاج + تكلفة | إضافة `ST_DWithin` وحدّ أعلى للورش المستهدفة |
-| **4** | **44 دالة `SECURITY DEFINER` قابلة للتنفيذ من دور `anon`** | مستشار الأمان — تشمل `admin_grant_admin`, `complete_order`, `admin_set_workshop_status` | الحراسة الداخلية تحمي (`current_user_is_admin()`)، لكنه **دفاع بطبقة واحدة** وسطح هجوم مكشوف | `REVOKE EXECUTE ... FROM anon` على كل دالة إدارية/كتابية |
-| **5** | **تسجيل الدخول المجهول مفعّل** | 47 تحذيراً `auth_allow_anonymous_sign_ins` | كل سياسة تفترض `auth.uid()` تعني مستخدماً حقيقياً تصبح موضع شك | إطفاؤه، أو مراجعة كل سياسة بفرض `is_anonymous = false` |
-| **6** | **`pending_workshops_for_review` مُعرَّفة `SECURITY DEFINER`** | خطأ ERROR — قد تكشف بيانات `auth.users` | تسريب بيانات مصادقة | إعادة تعريفها `security_invoker` مع سياسة صريحة |
-| **7** | **`spatial_ref_sys` بلا RLS** + **PostGIS في مخطط `public`** | خطأ ERROR + تحذير | ضجيج تدقيق أمني أكثر من خطر فعلي | تُعالج معاً بنقل الامتداد إلى مخطط `extensions` |
-| **8** | **حماية كلمات المرور المسرّبة معطّلة** | `auth_leaked_password_protection` | حسابات ضعيفة | تفعيلها من لوحة Supabase |
-| **9** | **إعادة التسمية غير مكتملة** | `analyze-diagnostic` ما زال يقول «التشخيص الذكي من **لايف كار**»، و`extract-document` يبدأ بـ «**Live Car**»، بينما `create-payment` يقول «**أوتو لايف**» | **يظهر للعميل في الفاتورة وفي ردّ التشخيص** | جردة نصية شاملة وتوحيد على «أوتو لايف» |
-| **10** | **تسمية المشاريع مضلِّلة** | الإنتاج على `livecar-workshop`، و`livecar-prod` متوقّف وفارغ | خطر تطبيق Migration على المشروع الخطأ | إعادة تسمية/دمج وتوثيق المشروع المرجعي |
-| **11** | **صفر موافقات مسجّلة** | `consents` = 0 رغم استخدام الكاميرا والموقع وبيانات المركبة للذكاء الاصطناعي | **خطر امتثال (نظام حماية البيانات الشخصية السعودي)** | إلزام شاشة موافقة قبل أول استخدام للكاميرا/الموقع |
-| **12** | **`services` مهجور مقابل `partner_products`** | 0 مقابل 9 | ازدواج نموذج البيانات | حسم أيهما مرجع الخدمات المسعّرة |
-| **13** | **`severity` مخزّن بثلاثة أشكال** | `severity`, `severity_legacy`, `flow_severity` — وقيد `severity` يقبل **الطقمين معاً** | التباس عند القراءة والتحليل | إنهاء الهجرة وإسقاط الحقول القديمة |
-| **14** | **13 من 18 ورشة معلّقة** | كلها بذور جدة (`seed_jeddah_workshops`) | 4 ورش نشطة فقط = عمق سوق ضعيف | جردة: تفعيل الحقيقي، حذف البذرة |
-| **15** | **8 مدفوعات عالقة على `initiated`** | 890 ر.س مقابل 145 ر.س مدفوعة فعلياً | لا تسوية ولا انتهاء صلاحية | مهمة `pg_cron` للتسوية مع Moyasar |
-| **16** | **لا مزوّد SMS/واتساب** | `user_preferences` يَعِد بالقناتين | وعد للمستخدم بلا تنفيذ | إمّا ربط مزوّد أو إخفاء الخيارين |
-| **17** | **دالة Haversine مبسّطة في قوالب المهارة** | `_haversineKm` تستخدم `.abs()` بدل `sin()` — والتعليق يقرّ بذلك | حسابات مسافة خاطئة إن نُسخت | حذف القالب أو تصحيحه |
-| **18** | **لا كود مصدري في المستودع** | `livecarksa/ALA` فارغ | **أخطر بند في القائمة**: مشروع بلا مستودع = بلا مراجعة، بلا تاريخ، بلا استرجاع | دفع مشروع FlutterFlow وكونسول الورشة إلى Git فوراً |
+| التحدي | ما حدث | الحل |
+|---|---|---|
+| **انقطاع CI كامل** (2026-07-14) | كل الوظائف تفشل في ~3 ثوانٍ بلا سجلات — ميزانية GitHub Actions مستنفدة | المؤسس رفع الميزانية · وضُبطت المضاعفات: إلغاء تكرار `pull_request`، تخطي الدفعات الوثائقية، `concurrency cancel-in-progress` |
+| **شاشة بيضاء على جهاز المؤسس** | Flutter Web لا يرسم شيئاً | استُنسخ محلياً بـ Playwright → CanvasKit من `gstatic` محجوب → التحويل للنسخة المحليّة |
+| **أعطال Realtime** | `RealtimeSubscribeException(channelError)` على الشاشة المنشورة | `resilientStream` مشترك: بثّ حي ← عند الخطأ جلب فوري + استطلاع 10–30 ثانية · طُبِّق على كل التدفقات |
+| **خلل حرج في السجل التلقائي** | التريغر أغفل عمود `service_type` غير القابل للفراغ — **كل إكمال طلب حقيقي كان سينفجر بـ 23502 ويمنع الإكمال نفسه** (لم يظهر لأن الطلب المكتمل الوحيد أُدرج مكتملاً) | اشتقاق النوع من الطلب المرتبط + احتياطي `general` + حارس تكرار |
+| **ثغرة قبول ذاتي للعرض** | الورشة كان بإمكانها تعديل حالة عرضها | حصر التحديثات على `pending`/`withdrawn` لطلبات مفتوحة ومغطّاة |
+| **بناء APK ينكسر مرتين** | `sentry_flutter 8.x` ثم `package_info_plus 9.0.1` يفترضان Gradle أحدث | تثبيت `sentry_flutter ^7.20.2` + `package_info_plus ^8.0.0` |
+| **روابط دعوة ميتة** | تُولَّد على مضيف `livecar-preview` المتقاعد الذي يسبق مسار `/invite` | المضيف الافتراضي صار `autolive-app.netlify.app/workshop` وتمرّره مسارات النشر صراحةً |
+| **تراجع بيئي صامت** | البيئة تراجعت وسط العمل فمُحيت ملفات | إعادة بناء + دفع مبكر كحماية |
+| **`_headers` بدل `netlify.toml`** | النشر اليدوي لا يعالج `netlify.toml` داخل مجلّد النشر | ملف `_redirects`/`_headers` صريح — يُحترم دائماً |
+
+### 4.4 تصحيحات على الإصدار 1.0 من هذا التقرير ⚠️
+
+| الادّعاء في v1.0 | التصحيح |
+|---|---|
+| «لا كود مصدري في المستودع — أخطر بند» | ❌ **خطأ.** الكود في `livecarksa/LivCar` — 874 ملفاً، 4 تطبيقات، 42 وثيقة |
+| «تطبيق العميل على FlutterFlow» | ❌ **خطأ.** Flutter مكتوب يدوياً + Riverpod + go_router |
+| «أعلى عائد: إضافة اعتماد Firebase لتفعيل Push» | ❌ **يناقض قراراً مسجّلاً.** المؤسس قرر: لا Firebase — Realtime هي القناة |
+| «بثّ الطلب لكل ورشة = خطر يحتاج حدّ مسافة» | ⚠️ **قرار مقصود** موثّق، والفلترة مجدولة عند > 20 ورشة نشطة |
+| «التسجيل المجهول ثغرة» | ⚠️ **قرار منتج** («دخول بلا احتكاك») — يبقى بنداً للمراجعة لا خللاً |
+| «هوية `#1E40AF`/`#F97316`» | ❌ **قديمة.** الهوية المعتمدة `#1E40FF` Cobalt + `#FF6A1A` Energy Orange |
+
+### 4.5 ⚠️ مهارة `flutterflow-livecar` قديمة ومضلِّلة
+
+المهارة المثبّتة تصف مشروعاً **غير هذا المشروع**:
+
+| ما تقوله المهارة | الواقع في الكود |
+|---|---|
+| FlutterFlow (`SupaFlow.client`, Custom Actions, `lc_<area>_<screen>`) | **Flutter يدوي** + Riverpod + go_router |
+| `#1E40AF` / `#F97316` | `#1E40FF` / `#FF6A1A` |
+| IBM Plex Arabic أو Cairo للمتن | **Tajawal** |
+| أرقام عربية-هندية حسب السياق | **لاتينية بالكامل** بقرار |
+| قالب `_haversineKm` بـ `.abs()` بدل `sin()` | حساب خاطئ — لا يُنسخ |
+
+**توصية:** تحديث المهارة أو إيقافها — وإلا ستوجّه كل عمل قادم إلى معمارية وهوية خاطئتين.
+
+### 4.6 الديون التقنية القائمة ✅
+
+| # | الدين | الأثر | الحل |
+|---|---|---|---|
+| **1** | **`complete_order` بتوقيعَين** — القديم `(uuid, numeric, int)` **يثبّت 8%**، والجديد `(uuid, numeric, text)` يقرأ `commission_rates` | خطأ محاسبي مباشر إن استُدعي القديم | حذف القديم بعد التأكد من عدم استخدامه |
+| **2** | **44 دالة `SECURITY DEFINER` قابلة للتنفيذ من `anon`** — منها `admin_grant_admin` و`admin_set_workshop_status` (مُتحقَّق منه اليوم) | الحراسة الداخلية تحمي، لكنه **دفاع بطبقة واحدة** | `REVOKE EXECUTE ... FROM anon` على كل دالة إدارية/كتابية |
+| **3** | **تريغرات مكرّرة** — `trg_orders_number`+`trigger_orders_number` · `trg_parts_request_number`+`trg_parts_requests_number` · ثنائيات `set_updated_at`/`touch_updated_at` · `sync_parts_shop_location` مرتين | عمل مضاعف وسلوك ملتبس | حذف المكرّر |
+| **4** | **حسابان للمسافة** — `match_workshops` بـ PostGIS، `lc_home_feed` بـ Haversine يدوي (`acos`) | نتائج متضاربة + مسح كامل في الشاشة الرئيسية | توحيد على PostGIS |
+| **5** | **حماية كلمات المرور المسرّبة معطّلة** | بند مفتوح منذ SEC-1 | تفعيلها من لوحة Supabase |
+| **6** | **إعادة التسمية غير مكتملة في Edge Functions** — `analyze-diagnostic` يقول «التشخيص الذكي من **لايف كار**» و`extract-document` يبدأ بـ «**Live Car**» بينما `create-payment` يقول «أوتو لايف» | **يظهر للعميل في ردّ التشخيص** | موجة تسمية ثانية |
+| **7** | **`livecar-prod` متوقّف وفارغ بينما الإنتاج على `livecar-workshop`** | خطر تطبيق Migration على المشروع الخطأ | إعادة تسمية وتوثيق |
+| **8** | **صفر موافقات مسجّلة** | خطر امتثال PDPL | شاشة موافقة قبل أول كاميرا/موقع |
+| **9** | **`poc-server` و`poc-publish` منشورتان بلا مصادقة** (`verify_jwt=false`، بلا سرّ مشترك) و`poc-publish` تكتب بمفتاح `service_role` | نقطتا دخول غير محروستين من أدوات إثبات مفهوم منتهية | حذفهما |
+| **10** | **8 مدفوعات عالقة على `initiated`** (890 ﷼ مقابل 145 ﷼ مدفوعة) | بقايا اختبار بلا تسوية ولا انتهاء صلاحية | مهمة `pg_cron` للتسوية |
+| **11** | **`severity` بثلاثة أشكال** والقيد يقبل الطقمين معاً | التباس تحليلي (دين مقصود بـ D-002) | إنهاء الهجرة وإسقاط القديم |
+| **12** | **`services` مهجور مقابل `partner_products`** | ازدواج نموذج | حسم المرجع |
+| **13** | **13 من 18 ورشة معلّقة** (بذور جدة) | عمق سوق ضعيف | جردة وتفعيل |
+| **14** | **`CLAUDE.md` قديم جزئياً** — يذكر Google Maps (الواقع OSM)، «ثلاثة منتجات» (الواقع أربعة)، ومحرك Claude وحده (الواقع Gemini افتراضي)، وتاريخه «2025» | يضلّل أي مطوّر جديد | تحديث |
+| **15** | **جلسات متوازية تكتب فوق نفس موقع Netlify** — «آخر دفعة تكسب» | خطر عرض خارجي على نسخة غير متوقعة | تجميد LC-A5 على **كل** الفروع |
+| **16** | **6 فروع غير مدموجة** على `LivCar`، و`main` مجرد قالب فارغ | لا مصدر حقيقة واحد | دمج الفروع في `main` |
+| **17** | **بيانات دخول تجريبية مكتوبة في `README.md`** (`demo-*@livecar.sa` بكلمة مرور ظاهرة) | مقبول لمستودع خاص — خطر عند أي فتح | نقلها إلى أسرار |
+| **18** | لا مزوّد SMS/واتساب رغم وعد التفضيلات | وعد بلا تنفيذ | Unifonic (مجدول) أو إخفاء الخيار |
 
 ---
 
 ## 5. خارطة الطريق والخطوات القادمة
 
-### 5.1 الوضع الحالي بصدق
+### 5.1 الوضع الحالي بصدق ✅
 
-المنتج **يعمل من طرف إلى طرف**: تشخيص ← طلب ← عروض ← تفاوض ← طلب ← إنجاز ← دفع ← سجل صيانة. لكن آخر طلب أُنشئ في **2026-07-28** وآخر تشخيص في **2026-08-15** — أي أن التشخيص ما زال يُستخدم بينما **توقّفت المعاملات منذ ثلاثة أسابيع**. هذه ليست مشكلة كود؛ إنها مشكلة **عمق سوق**: 4 ورش نشطة و5 مركبات مسجّلة.
+**المراحل المُغلقة:** المرحلة 4 (تطبيق الورش) · المرحلة 5 (تجربة الورشة الاحترافية، LC-501→508) · المرحلة A (تفعيل الدفع والمعاينة الحيّة) · المرحلة B (B1–B9) · المرحلة C (إعادة هندسة الرئيسية، C1–C6).
 
-مجموع المدفوع فعلياً: **145 ريالاً**. الأولوية إذن ليست ميزات جديدة — بل **تشغيل المسار الموجود**.
+**حكم مجلس الخبراء (6 أعضاء، 2026-06-11):** «**جاهز بشروط** — Beta مغلقة في جدة/مكة بعد تنفيذ الفجوات الحرجة الست» — والفجوات الست **نُفِّذت كلها**.
 
-### 5.2 قاطع للإطلاق (P0) — لا إطلاق عام قبل إنجازها
+**لكن:** آخر طلب حقيقي **2026-07-28**، وآخر تشخيص **2026-08-15**. أي أن التشخيص ما زال يُستخدم بينما **توقّفت المعاملات منذ ثلاثة أسابيع**. إجمالي المدفوع فعلياً **145 ريالاً** (اختباري). المنتج جاهز — **التجربة المغلقة لم تبدأ**.
 
-| # | المهمة | لماذا الآن | التقدير |
-|---|---|---|---|
-| **P0-1** | **دفع الكود إلى Git** — مشروع FlutterFlow + كونسول الورشة + Migrations + Edge Functions | المشروع بلا مستودع؛ عطل واحد في FlutterFlow أو Netlify يمحو أشهر عمل | يوم |
-| **P0-2** | **إغلاق ثغرات الأمان الثلاث ERROR** — `pending_workshops_for_review`، `spatial_ref_sys`، نقل PostGIS | تُظهر بيانات مصادقة محتملة، ولا تجتاز أي تدقيق أمني | نصف يوم |
-| **P0-3** | **`REVOKE EXECUTE` من `anon` على 44 دالة** — وأولها `admin_grant_admin` و`complete_order` | طبقة دفاع ثانية غائبة على أخطر الدوال | يوم |
-| **P0-4** | **إطفاء التسجيل المجهول + تفعيل حماية كلمات المرور المسرّبة** | يبطل افتراضات RLS | ساعة |
-| **P0-5** | **حذف `complete_order` القديمة (8% مثبّتة)** | خطأ محاسبي مباشر في إيراد المنصّة | ساعتان |
-| **P0-6** | **تسجيل الموافقات (`consents`)** قبل أول استخدام للكاميرا/الموقع/الذكاء الاصطناعي | التزام نظام حماية البيانات الشخصية | يوم |
-| **P0-7** | **توحيد الاسم على «أوتو لايف»** في الـ prompts والفواتير وكل نصّ ظاهر | العميل يرى اسمين لشركة واحدة | نصف يوم |
+**العائق ليس الكود.** هو أربعة بنود بشرية في `HUMAN LANE`.
 
-### 5.3 لإكمال النموذج الأولي (P1) — الحلقات المفتوحة
+### 5.2 المسار البشري — العائق الحقيقي 🔴
 
-| # | المهمة | الأثر |
+| المسؤول | المهمة | الحالة |
 |---|---|---|
-| **P1-1** | **تفعيل الإشعارات الفورية**: وضع `FCM_SERVICE_ACCOUNT` في Vault + تسجيل `push_tokens` في التطبيقين | **أعلى عائد لأقل جهد** — البنية جاهزة 100%، ينقصها اعتماد واحد. بدونها لا تعرف الورشة بطلب ولا العميل بعرض |
-| **P1-2** | **إغلاق حلقة التقييم**: شاشة تقييم إجبارية بعد الإنجاز | 0 تقييمات ⇒ `rating_avg` صفر ⇒ **معيار الترتيب الثالث في المطابقة معطّل** ⇒ لا ثقة |
-| **P1-3** | **تفعيل الفوترة**: استدعاء `issue_invoice()` عند الإقفال + عرض/تنزيل PDF | التزام ضريبي + مطلب أساسي لأي ورشة نظامية |
-| **P1-4** | **تسوية المدفوعات العالقة**: `pg_cron` يطابق الحالات مع Moyasar وينهي المنتهية | 8 عمليات معلّقة اليوم — رقم ينمو |
-| **P1-5** | **جردة الورش**: تفعيل الحقيقي وحذف البذرة، والوصول إلى **15–20 ورشة نشطة في جدة** عبر `provision_pilot_workshops` | عمق السوق هو العائق الحقيقي، لا الكود |
-| **P1-6** | **حدّ مسافة على بثّ الطلبات** + سقف لعدد الورش المستهدفة | يمنع الإزعاج قبل أن يبدأ |
-| **P1-7** | **توحيد حساب المسافة على PostGIS** في `lc_home_feed` | اتساق + أداء |
-| **P1-8** | **تذكيرات الوثائق**: `pg_cron` يقرأ `vehicle_documents.reminder_days_before` (30/7/1) | يحوّل التطبيق من «عند العطل» إلى **حضور شهري** — أقوى محرّك احتفاظ متاح |
+| **المؤسس** | استبدال `sk_test_` بـ `sk_live_` في Vault — **صفر تغيير كود** | ⏳ مفتوح |
+| **المؤسس** | جوالان مشحونان + **بروفة المسار الذهبي (LC-A4)** — المزاد الحي هو المشهد المحوري | ⏳ مفتوح |
+| **المؤسس** | حساب Apple Developer (يبدأ مبكراً — التوثيق يأخذ أياماً) | ⏳ مفتوح |
+| **المؤسس** | إكمال حقول المالك القانوني والسجل التجاري في وثيقتَي الخصوصية والشروط | ⏳ مفتوح |
+| **فارس** | التزام **3–5 ورش** من علاقات LOI + تسليم روابط الدعوة | ⏳ مفتوح |
+| **عبدالله** | مجموعة واتساب الورش + جدول الكونسيرج | ⏳ مفتوح |
 
-### 5.4 بعد النموذج الأولي (P2)
+> نموذج التشغيل جاهز: `docs/ops/PILOT_RUNBOOK.md` يعرّف **نموذج الكونسيرج لأول 20 طلباً** — يُرى خلال ≤ 5 دقائق، عرض خلال ≤ 15 دقيقة، والكونسيرج **يسعى ليكون العرض الثاني لا الوحيد** — مع جدول تصعيد بمواعيد، وعتبات قرار أسبوعية، واستعلام KPI يومي واحد **جرى تنفيذه حياً بتوقيت الرياض ويعمل**.
 
-| المهمة | ملاحظة |
-|---|---|
-| **حسم مصير سوق قطع الغيار** | مبني بالكامل وبلا مستخدم — إمّا إطلاقه بورش الطيار أو تجميده صراحةً |
-| **تفعيل مصدر إيراد ثانٍ** | الأقرب: **الظهور المميّز (Featured)** — الرافعة موجودة في خوارزمية الترتيب وغير مُسعّرة |
-| **باقات اشتراك الورش** | `subscription_plan` جاهز وكل الورش `free` |
-| **توحيد `services` مقابل `partner_products`** | إنهاء الازدواج |
-| **إنهاء هجرة `severity`** | إسقاط `severity_legacy` وتوحيد القيم |
-| **ربط مزوّد SMS/واتساب** | أو إخفاء الخيارين من الإعدادات |
-| **تنظيف مشاريع Supabase** | إعادة تسمية وتوثيق المشروع المرجعي |
-| **ربط ZATCA (فاتورة)** | متطلب نظامي عند نموّ حجم الفوترة |
-| **قراءات السيارة الحية** | `vehicle_status` جاهز — يحتاج قراراً: OBD؟ إدخال يدوي؟ استنتاج من سجل الصيانة؟ |
-| **التوسّع للرياض** | القاعدة تفترض «الرياض» افتراضياً بينما كل البيانات في جدة |
+### 5.3 مهام المنتج المتبقية (من `ROADMAP.md`) ✅
 
-### 5.5 مؤشرات النجاح المقترحة للمرحلة القادمة 🔶
+| الرمز | المهمة | الأولوية |
+|---|---|---|
+| **LC-A4** | بروفة المسار الذهبي بجوالين على بيانات حيّة | 🔴 قاطعة |
+| **LC-A5** | قاعدة التجميد: لا دفعات على client/workshop قبل أي عرض خارجي بـ 24 ساعة — **على كل الفروع** | 🔴 قاطعة |
+| **LC-C7** | لقطات التحقق اليدوي للحالات الأربع + الأردية | 🟠 عالية |
+| **LC-C8** | الإدخال الصوتي الفعلي لبوابة التشخيص (speech-to-text) | 🟠 عالية |
+| **LC-409** | **النزاعات والشكاوى** — جدول شكاوى + إبلاغ من الطرفين + طابور معالجة إداري | 🟠 عالية (يوجد طلبان `disputed` بلا مسار معالجة) |
+| **LC-410** | **آلية الضمان** — ختم صلاحية عند الإكمال + مطالبة داخل النافذة + قسم إداري | 🟡 متوسطة |
+
+### 5.4 أولوياتي المقترحة (مبنيّة على ما رأيته)
+
+**P0 — قبل أي عرض خارجي**
+
+| # | المهمة | لماذا |
+|---|---|---|
+| P0-1 | **`sk_live_` + LC-A4 + LC-A5** | البوابة الوحيدة بين «جاهز» و«شغّال» |
+| P0-2 | **`REVOKE EXECUTE` من `anon` على 44 دالة** | `admin_grant_admin` مكشوفة لدور مجهول — بطبقة حراسة واحدة |
+| P0-3 | **حذف `complete_order` القديمة (8%)** | خطأ محاسبي مباشر في إيراد المنصّة |
+| P0-4 | **حذف `poc-server` و`poc-publish`** | نقطتا دخول غير محروستين لأدوات منتهية |
+| P0-5 | **تسجيل الموافقات (`consents`)** | التزام PDPL — كاميرا وموقع وبيانات مركبة |
+| P0-6 | **توحيد الاسم على «أوتو لايف»** في الـ prompts | العميل يرى الاسم القديم في ردّ التشخيص |
+| P0-7 | **دمج الفروع الستة في `main`** | لا مصدر حقيقة واحد اليوم |
+
+**P1 — لتشغيل التجربة المغلقة**
+
+| # | المهمة | لماذا |
+|---|---|---|
+| P1-1 | **تفعيل 15–20 ورشة في جدة** عبر `provision_pilot_workshops` + جردة الـ 13 المعلّقة | **العائق الحقيقي** — عمق السوق لا الكود |
+| P1-2 | **LC-409 النزاعات** | طلبان متنازعان بلا مسار معالجة |
+| P1-3 | **تفعيل الفوترة في الإقفال** | التزام ضريبي + مطلب أي ورشة نظامية |
+| P1-4 | **تسوية المدفوعات العالقة** بمهمة `pg_cron` | 8 عمليات معلّقة ورقم ينمو |
+| P1-5 | **تذكيرات وثائق المركبة** (`pg_cron` على 30/7/1 يوم) | يحوّل التطبيق من «عند العطل» إلى **حضور شهري** — أقوى محرّك احتفاظ متاح |
+| P1-6 | **LC-C7 + LC-C8** | إغلاق المرحلة C |
+| P1-7 | **`SENTRY_DSN`** | البنية جاهزة — خطوة واحدة |
+| P1-8 | **توحيد حساب المسافة + حذف التريغرات المكرّرة** | اتساق وأداء |
+
+**P2 — بعد التجربة المغلقة**
+
+فلترة جغرافية عند > 20 ورشة نشطة (مجدولة) · LC-410 الضمان · iOS/TestFlight · SMS OTP (Unifonic) · **webhook ميسر الموقّع** · حسم سوق قطع الغيار · تسعير الظهور المميّز (أقرب مصدر إيراد ثانٍ) · باقات اشتراك الورش · تكاملات حكومية · تسجيل صوت المحرك · دومين مخصص · تحديث `CLAUDE.md` ومهارة `flutterflow-livecar`.
+
+### 5.5 مؤشرات النجاح 🔶
 
 | المؤشر | اليوم | هدف 30 يوماً |
 |---|---|---|
-| ورش نشطة موثّقة | **2** | 15 |
+| ورش نشطة موثّقة | **2** | 15–20 |
 | طلبات مكتملة/أسبوع | ~0 | 20 |
-| نسبة التشخيص ← طلب خدمة | 22 من 50 (44%) | ≥ 60% |
-| نسبة الطلب ← إنجاز | 6 من 18 (33%) | ≥ 70% |
-| تقييمات مسجّلة | **0** | ≥ 80% من الطلبات المنجزة |
-| إيراد عمولة | ~0 | أول 1,000 ر.س |
-| مدفوعات عالقة | 8 | 0 |
+| **متوسط الزمن حتى أول عرض** | — | ≤ 15 دقيقة (سقف الكونسيرج) |
+| **نسبة الطلبات بعرضين فأكثر** | — | ≥ 70% (فرضية «العروض المتعددة») |
+| تشخيص ← بثّ طلب | 22 من 50 (44%) | ≥ 60% |
+| طلب ← إنجاز | 6 من 18 (33%) | ≥ 70% |
+| تقييمات مسجّلة | **0** | ≥ 80% من المنجز |
+| إيراد عمولة | ~0 | أول 1,000 ﷼ |
 
 ---
 
-## ملحق أ — بطاقة أرقام سريعة ✅ (2026-08-19)
+## ملحق أ — بطاقة أرقام (2026-08-19) ✅
 
 | البند | القيمة |
 |---|---|
-| مستخدمون | **31** (1 مسؤول، 0 Premium) |
-| ورش | **18** — 4 نشطة (2 موثّقة) · 14 معلّقة · كلها جدة عدا واحدة بالرياض |
-| مركبات | **5** |
-| جلسات تشخيص | **50** — 30 نهائية (21 عاجل، 9 قريباً) · 48 عبر Gemini |
-| طلبات خدمة | **22** (10 مفتوحة، 7 مقبولة، 5 ملغاة) |
-| عروض أسعار | **11** (7 مقبول، 1 مقابل، 3 معلّق) |
-| طلبات (Orders) | **18** — 6 مكتملة، 5 مقبولة، 3 معلّقة، 2 قيد التنفيذ، 2 نزاع |
-| مدفوعات | **10** — 2 مدفوعة (145 ر.س) · 8 عالقة (890 ر.س) |
-| إشعارات | **66** |
-| منتجات شركاء | **9** · استخراجات OCR **9** · دعوات ورش **3** · تدقيق إداري **19** |
-| تقييمات · فواتير · قطع غيار · Push Tokens · موافقات | **0** لكلٍّ منها |
+| مستخدمون | **31** (1 مسؤول · 0 Premium) |
+| ورش | **18** — 4 نشطة (2 موثّقة) · 14 معلّقة · جدة عدا واحدة |
+| مركبات · تشخيصات | **5** · **50** (30 نهائية: 21 عاجل، 9 قريباً · 48 عبر Gemini) |
+| طلبات خدمة · عروض | **22** (10 مفتوحة) · **11** (7 مقبول، 1 مقابل، 3 معلّق) |
+| طلبات | **18** — 6 مكتملة · 5 مقبولة · 3 معلّقة · 2 قيد التنفيذ · **2 متنازع** |
+| مدفوعات | **10** — 2 مدفوعة (145 ﷼) · 8 عالقة (890 ﷼) |
+| إشعارات · منتجات · OCR · دعوات · تدقيق | 66 · 9 · 9 · 3 · 19 |
+| تقييمات · فواتير · قطع غيار · موافقات · Push Tokens | **0** لكلٍّ |
 | آخر طلب · آخر تشخيص | 2026-07-28 · 2026-08-15 |
 
-## ملحق ب — الأصول التقنية القابلة للتحقق
+## ملحق ب — الأصول التقنية ✅
 
-- **Supabase (الإنتاج الفعلي):** `xqtlicushtnmofgvikjz` · `livecar-workshop` · ap-south-1 · PostgreSQL 17.6
-- **Edge Functions:** `analyze-diagnostic` (v10) · `extract-document` (v3) · `create-payment` (v3) · `verify-payment` (v4) · `send-push` (v1) · `test-gemini-key` (v4) · `poc-server` (v4) · `poc-publish` (v1)
-- **كونسول الورشة:** `https://autolive-app.netlify.app/workshop/` (توجيه Hash · دعوة `#/invite/<token>`)
-- **مفاتيح Vault المتوقعة:** `GEMINI_API_KEY` · `CLAUDE_API_KEY` (والاسم القديم `ANTHROPIC_API_KEY` للتوافق) · `MOYASAR_SECRET_KEY` · `PUSH_HOOK_SECRET` · `FCM_SERVICE_ACCOUNT` (مفقود)
-- **معيار المهارة الملزِم:** `flutterflow-livecar` — الهوية، RTL، أنماط Supabase، مراجعة الكود، وإدارة الحالة
+- **المستودع:** `livecarksa/LivCar` (خاص) — الفرع النشط `claude/autolive-landing-redesign-sqa81f`
+- **الفروع غير المدموجة (6):** `live-car-platform-N8PHO` · `admin-ops-board-jlld8c` · `admin-p1` · `admin-audit-trail` · `admin-crm-refresh` · `autolive-landing-redesign-sqa81f`
+- **الروابط الحيّة:** الهبوط `autolive-app.netlify.app` · `/client/` · `/workshop/` · `/admin/` · `/apk` · `/privacy.html` · `/terms.html`
+- **Supabase:** `xqtlicushtnmofgvikjz` (`livecar-workshop`) · ap-south-1 · PG 17.6
+- **Edge Functions:** `analyze-diagnostic` v10 · `extract-document` v3 · `create-payment` v3 · `verify-payment` v4 · `send-push` v1 (خاملة) · `test-gemini-key` · `poc-server` · `poc-publish`
+- **CI (6 مسارات):** `flutter-ci` (تحليل + اختبارات + مسبار Realtime ≤ 5 ثوانٍ + بوابة أسرار) · `build-apk` · `deploy-netlify` · `deploy-pages` (معطّل بلا `PAGES_DEPLOY_TOKEN`) · `debug-realtime` · `blank`
+- **اختبارات SQL حيّة:** `supabase/tests/lc40x_policy_tests.sql` (15 فحصاً ذاتي البذر والتنظيف) · `lc506_507_policy_tests.sql` (11 فحصاً)
+- **وثائق مرجعية:** `CLAUDE.md` · `DECISIONS.md` · `GAP_REPORT.md` · `PROGRESS.md` · `docs/ROADMAP.md` · `docs/LAUNCH.md` · `docs/UX_JOURNEY.md` · `docs/flows/USER_FLOWS.md` · `docs/design/lc_home_main.spec.md` · `docs/ops/PILOT_RUNBOOK.md` · `docs/ops/WHATSAPP_TEMPLATES.md` · `docs/council/` (7 تقارير) · `docs/legal/` · `docs/partnerships/BIN_SHIHON_ONBOARDING.md`
 
 ---
 
-*أُعدّ هذا المرجع بالاستقراء المباشر من قاعدة البيانات الحيّة وكود Edge Functions ومعيار المهارة المعتمد. كل رقم فيه قابل لإعادة التحقق. المحادثات السابقة لم تكن متاحة — أرفقها وسأدمجها في هذا الملف نفسه.*
+*أُعدّ هذا المرجع بقراءة مباشرة لمستودع `LivCar` وقاعدة البيانات الحيّة وكود Edge Functions. كل رقم قابل لإعادة التحقق. المحادثات السابقة لم تكن متاحة.*
